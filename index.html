@@ -99,7 +99,6 @@
     <div class="academic-card px-5 py-4 flex items-center gap-3 text-sm font-bold shadow-lg" id="toastMsg"></div>
 </div>
 
-<!-- SKRIN LOG MASUK -->
 <div class="shell" id="loginScreen">
     <div class="academic-card w-full shadow-2xl p-8 border-t-4" style="max-width:420px; border-top-color: var(--primary);">
         <div class="text-center mb-6">
@@ -128,7 +127,6 @@
     </div>
 </div>
 
-<!-- PAPAN PEMUKA PENSYARAH -->
 <div id="lecturerDash" style="display:none; min-height:100vh; flex-direction:column;">
     <div style="background:var(--primary); color:white; padding:14px 28px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50;">
         <div class="flex items-center gap-3">
@@ -146,7 +144,7 @@
         <button onclick="logout()" class="btn-outline px-3 py-1.5 rounded-lg text-white border-white/30 hover:bg-teal-800"><i class="fas fa-sign-out-alt me-1"></i> Keluar</button>
     </div>
 
-    <!-- NAVIGASI -->
+    <!-- NAVIGASI TAB -->
     <div class="bg-white border-b border-slate-200 px-7 pt-4">
         <div class="flex gap-2 -mb-px overflow-x-auto">
             <button class="nav-btn active" onclick="showLecTab('marking')"><i class="fas fa-calculator me-1"></i> Pemarkahan Induk</button>
@@ -162,7 +160,6 @@
     </div>
 
     <div class="p-6 grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 flex-1">
-        <!-- SENARAI CALON KIRI -->
         <div class="academic-card p-4 sticky top-[100px] max-h-[calc(100vh-120px)] flex flex-col">
             <div class="text-[11px] font-extrabold uppercase tracking-wider mb-3 flex justify-between items-center">
                 <span>Senarai Pelajar</span>
@@ -175,7 +172,6 @@
             <div id="sList" class="scroll-thin flex-1 overflow-y-auto pr-1"></div>
         </div>
 
-        <!-- RUANG KERJA UTAMA -->
         <div class="min-w-0">
             <!-- TAB 1: MARKAH INDUK -->
             <div id="ltab-marking">
@@ -267,7 +263,6 @@
                 </div>
             </div>
 
-            <!-- TAB 2: PANEL RUBRIK -->
             <div id="ltab-rubrik" style="display:none;">
                 <div id="rubrikLecEmpty" class="academic-card p-12 flex items-center justify-center border-dashed border-2 bg-slate-50 min-h-[450px]">
                     <div class="text-center text-slate-400">
@@ -293,7 +288,6 @@
                 </div>
             </div>
 
-            <!-- TAB 3: REKOD PRESTASI -->
             <div id="ltab-summary" style="display:none;">
                 <div class="academic-card p-5">
                     <div class="flex justify-between items-center mb-4">
@@ -324,7 +318,6 @@
                 </div>
             </div>
 
-            <!-- TAB 4: LAPORAN GRED -->
             <div id="ltab-laporan" style="display:none;">
                 <div class="academic-card p-5 mb-5 flex justify-between items-center bg-white border-l-4 border-rose-800">
                     <h3 class="font-serif-title text-lg font-bold text-slate-800">Analisis Taburan Gred (Peratusan 100%)</h3>
@@ -372,7 +365,6 @@ const RUBRIK_CONFIG = [
     { id: 't2_vbe', title: 'Tugasan 2: Penulisan (VBE Keadilan 5m)', max: 5, color: '#9f1239', prefix: 't_vbe', desc: 'Penonjolan nilai keadilan & wasatiyyah (5m)' }
 ];
 
-// STRICT GUARDRAIL TO PREVENT 'undefined' TOAST POPUPS
 function showToast(msg, type='success') {
     if (!msg || msg === 'undefined') {
         msg = type === 'warn' ? 'Ralat akses atau maklumat tidak dijumpai.' : 'Tindakan berjaya.';
@@ -612,5 +604,3 @@ function logout() { location.reload(); }
 
 </body>
 </html>
-```
-
