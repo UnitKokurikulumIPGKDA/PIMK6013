@@ -67,6 +67,9 @@
         .disclaimer-bar { background: #0f172a; border-bottom: 2px solid var(--secondary); padding: 8px 24px; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 11px; color: #f8fafc; }
         .disclaimer-footer { background: #f1f5f9; border-top: 1px solid var(--border); padding: 20px; text-align: center; font-size: 11px; color: var(--text-muted); }
 
+        .likert-btn { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .likert-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
         #printArea, #printIndividualArea { display: none; }
         .print-table { width: 100%; border-collapse: collapse; font-size: 10px; }
         .print-table th, .print-table td { border: 1px solid #94a3b8; padding: 6px 8px; text-align: left; }
@@ -97,6 +100,7 @@
     <div class="academic-card px-5 py-4 flex items-center gap-3 text-sm font-bold shadow-lg" id="toastMsg"></div>
 </div>
 
+<!-- LOG MASUK UTAMA -->
 <div class="shell" id="loginScreen">
     <div class="academic-card w-full shadow-2xl p-8 border-t-4" style="max-width:420px; border-top-color: var(--primary);">
         <div class="text-center mb-6">
@@ -108,12 +112,17 @@
             <p class="text-xs text-slate-500 font-medium">PIMK6013 — Pengajian Ilmu Akidah</p>
         </div>
 
+        <div class="flex gap-2 mb-4 bg-slate-100 p-1 rounded-lg">
+            <button class="flex-1 py-2 text-xs font-bold rounded-md bg-white text-teal-800 shadow-sm" id="btnRoleLec" onclick="setRole('lec')"><i class="fas fa-chalkboard-teacher me-1"></i> Pensyarah</button>
+            <button class="flex-1 py-2 text-xs font-bold rounded-md text-slate-500" id="btnRoleStud" onclick="setRole('stud')"><i class="fas fa-user-graduate me-1"></i> Pelajar</button>
+        </div>
+
         <div class="flex flex-col gap-4 mb-6">
             <div>
-                <label class="dim-label">Emel Rasmi Pensyarah / Penyelaras</label>
+                <label class="dim-label" id="idLabel">Emel Rasmi Pensyarah / Penyelaras</label>
                 <input type="text" id="idIn" value="admin@ipgm.edu.my" placeholder="pensyarah@ipgm.edu.my" class="w-full font-mono-score text-center">
             </div>
-            <div>
+            <div id="pwArea">
                 <label class="dim-label">Kata Laluan</label>
                 <input type="password" id="pwIn" value="admin" placeholder="••••••••" class="w-full text-center">
             </div>
@@ -123,12 +132,66 @@
             <i class="fas fa-sign-in-alt me-2"></i> Log Masuk Sistem
         </button>
 
-        <button onclick="autoLoginBypass()" class="w-full py-2.5 px-4 bg-teal-50 border border-teal-200 text-teal-800 hover:bg-teal-100 font-bold rounded-lg text-xs transition flex items-center justify-center gap-2">
+        <button onclick="autoLoginBypass()" id="bypassBtn" class="w-full py-2.5 px-4 bg-teal-50 border border-teal-200 text-teal-800 hover:bg-teal-100 font-bold rounded-lg text-xs transition flex items-center justify-center gap-2">
             <i class="fas fa-bolt text-amber-500"></i> Pintas Log Masuk (Auto-Login Admin)
         </button>
     </div>
 </div>
 
+<!-- DASHBOARD PELAJAR (PENILAIAN RAKAN SEBAYA) -->
+<div id="studentDash" style="display:none; min-height:100vh; flex-direction:column;">
+    <div style="background:var(--primary); color:white; padding:14px 28px; display:flex; align-items:center; justify-content:space-between;">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-user-graduate text-2xl"></i>
+            <div>
+                <div class="text-[9px] font-bold tracking-widest text-white/70 uppercase">Ruang Pelajar</div>
+                <div id="studName" class="font-serif-title text-base font-bold">--</div>
+            </div>
+        </div>
+        <button onclick="logout()" class="btn-outline px-3 py-1.5 rounded-lg text-white border-white/30 hover:bg-teal-800"><i class="fas fa-sign-out-alt me-1"></i> Keluar</button>
+    </div>
+
+    <div class="p-6 grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 flex-1">
+        <!-- Senarai Rakan Sekelas -->
+        <div class="academic-card p-4 flex flex-col">
+            <div class="text-xs font-bold uppercase mb-3 flex justify-between">
+                <span>Rakan Sekelas</span>
+                <span id="peerProgress" class="font-mono-score text-teal-700 bg-teal-50 px-2 py-0.5 rounded text-[10px]">0/0</span>
+            </div>
+            <div id="peerList" class="scroll-thin flex-1 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Borang Penilaian Rakan -->
+        <div class="academic-card p-6">
+            <div id="peerEmpty" class="text-center py-16 text-slate-400">
+                <i class="fas fa-users-viewfinder text-4xl mb-3"></i>
+                <p class="text-xs font-bold">Sila pilih rakan dari senarai di sebelah kiri untuk memulakan Penilaian Rakan Sebaya (HP8).</p>
+            </div>
+            <div id="peerForm" style="display:none;">
+                <div class="border-b pb-4 mb-5 flex justify-between items-center">
+                    <div>
+                        <div class="dim-label">Menilai Rakan</div>
+                        <h3 id="peerTargetName" class="font-serif-title text-xl font-bold text-teal-800">--</h3>
+                    </div>
+                    <span id="peerStatusBadge" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600">Belum Dinilai</span>
+                </div>
+
+                <div class="space-y-5" id="peerQuestions"></div>
+
+                <div class="mt-5">
+                    <label class="dim-label">Catatan / Ulasan Khas (Pilihan)</label>
+                    <textarea id="peerNote" rows="2" placeholder="Tulis catatan positif mengenai rakan anda..." class="w-full text-xs"></textarea>
+                </div>
+
+                <button onclick="submitPeerEval()" id="btnPeerSubmit" class="btn-primary w-full py-3.5 rounded-lg text-xs mt-6">
+                    <i class="fas fa-paper-plane me-2"></i> HANTAR PENILAIAN RAKAN
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DASHBOARD PENSYARAH -->
 <div id="lecturerDash" style="display:none; min-height:100vh; flex-direction:column;">
     <div style="background:var(--primary); color:white; padding:14px 28px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50;">
         <div class="flex items-center gap-3">
@@ -151,6 +214,7 @@
         <div class="flex gap-2 -mb-px overflow-x-auto">
             <button class="nav-btn active" onclick="showLecTab('marking')"><i class="fas fa-calculator me-1"></i> Pemarkahan Induk</button>
             <button class="nav-btn" onclick="showLecTab('rubrik')"><i class="fas fa-clipboard-list me-1"></i> Panel Rubrik</button>
+            <button class="nav-btn" onclick="showLecTab('peer_analisis')"><i class="fas fa-users-cog me-1"></i> Analisis Rakan</button>
             <button class="nav-btn" onclick="showLecTab('summary')"><i class="fas fa-table me-1"></i> Rekod Prestasi</button>
             <button class="nav-btn" onclick="showLecTab('laporan')"><i class="fas fa-chart-pie me-1"></i> Analisis Gred</button>
         </div>
@@ -202,7 +266,6 @@
 
                     <!-- KOMPONEN MARKAH PIMK6013 -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-                        <!-- TUGASAN 1 -->
                         <div class="academic-card p-5 border-t-4" style="border-top-color: var(--t1-color);">
                             <div class="text-xs font-extrabold uppercase mb-4 border-b pb-2 flex justify-between">
                                 <span>Tugasan 1: Persembahan</span>
@@ -218,7 +281,6 @@
                             </div>
                         </div>
 
-                        <!-- TUGASAN 2 -->
                         <div class="academic-card p-5 border-t-4" style="border-top-color: var(--t2-color);">
                             <div class="text-xs font-extrabold uppercase mb-4 border-b pb-2 flex justify-between">
                                 <span>Tugasan 2: Penulisan (1600 pp)</span>
@@ -264,33 +326,81 @@
                 </div>
             </div>
 
-            <!-- TAB 2: RUBRIK -->
+            <!-- TAB 2: PANEL RUBRIK & PENETAPAN RUBRIK -->
             <div id="ltab-rubrik" style="display:none;">
-                <div id="rubrikLecEmpty" class="academic-card p-12 flex items-center justify-center border-dashed border-2 bg-slate-50 min-h-[450px]">
-                    <div class="text-center text-slate-400">
-                        <i class="fas fa-clipboard-list text-3xl mb-3"></i>
-                        <h4 class="font-serif-title text-xl font-bold text-slate-700 mb-1">Panel Rubrik PIMK6013</h4>
-                        <p class="text-xs">Sila pilih pelajar untuk mengisi kriteria rubrik tugasan.</p>
+                <div class="flex gap-2 border-b mb-4">
+                    <button class="px-4 py-2 text-xs font-bold border-b-2 border-teal-700 text-teal-800" id="subTabRubrikForm" onclick="switchRubrikSubTab('form')"><i class="fas fa-edit me-1"></i> Borang Penilaian Pelajar</button>
+                    <button class="px-4 py-2 text-xs font-bold border-b-2 border-transparent text-slate-500" id="subTabRubrikConfig" onclick="switchRubrikSubTab('config')"><i class="fas fa-cog me-1"></i> ⚙️ Penetapan Rubrik Dinamik</button>
+                </div>
+
+                <!-- SUB-TAB 1: BORANG PENILAIAN RUBRIK PELAJAR -->
+                <div id="rubrikSubTabForm">
+                    <div id="rubrikLecEmpty" class="academic-card p-12 flex items-center justify-center border-dashed border-2 bg-slate-50 min-h-[400px]">
+                        <div class="text-center text-slate-400">
+                            <i class="fas fa-clipboard-list text-3xl mb-3"></i>
+                            <h4 class="font-serif-title text-xl font-bold text-slate-700 mb-1">Panel Rubrik PIMK6013</h4>
+                            <p class="text-xs">Sila pilih pelajar dari senarai di sebelah kiri untuk mengisi kriteria rubrik tugasan.</p>
+                        </div>
+                    </div>
+                    
+                    <div id="rubrikLecPanel" style="display:none;" class="fade-in">
+                        <div class="academic-card p-5 mb-5 flex justify-between items-center bg-white border-l-4 border-rose-800">
+                            <div>
+                                <div class="dim-label">Instrumen Rubrik</div>
+                                <div id="rubrikLecStudentName" class="font-serif-title text-xl font-bold text-slate-800">--</div>
+                            </div>
+                        </div>
+
+                        <div id="lecRubrikContainer" class="space-y-4"></div>
+
+                        <button onclick="saveRubrik()" id="saveRubrikBtn" class="btn-primary w-full py-3.5 rounded-lg text-xs mt-5">
+                            <i class="fas fa-save me-2"></i> SIMPAN KEPUTUSAN RUBRIK
+                        </button>
                     </div>
                 </div>
-                
-                <div id="rubrikLecPanel" style="display:none;" class="fade-in">
-                    <div class="academic-card p-5 mb-5 flex justify-between items-center bg-white border-l-4 border-rose-800">
-                        <div>
-                            <div class="dim-label">Instrumen Rubrik</div>
-                            <div id="rubrikLecStudentName" class="font-serif-title text-xl font-bold text-slate-800">--</div>
+
+                <!-- SUB-TAB 2: PENETAPAN RUBRIK MARKAH (CONFIGURATOR) -->
+                <div id="rubrikSubTabConfig" style="display:none;" class="fade-in">
+                    <div class="academic-card p-5 mb-5 bg-teal-50 border-teal-200 border">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-serif-title text-lg font-bold text-teal-900"><i class="fas fa-sliders-h me-2"></i>Penetapan Panel Rubrik Dinamik</h3>
+                                <p class="text-xs text-teal-700 mt-0.5">Konfigurasi Tajuk Tugasan, HP (Hasil Pembelajaran), Markah Keseluruhan dan Tambah Kriteria Penilaian.</p>
+                            </div>
+                            <button onclick="saveDynamicRubricConfig()" class="btn-primary px-4 py-2 text-xs rounded-lg bg-teal-800"><i class="fas fa-save me-1"></i> Simpan Tetapan Rubrik</button>
                         </div>
                     </div>
 
-                    <div id="lecRubrikContainer" class="space-y-4"></div>
-
-                    <button onclick="saveRubrik()" id="saveRubrikBtn" class="btn-primary w-full py-3.5 rounded-lg text-xs mt-5">
-                        <i class="fas fa-save me-2"></i> SIMPAN KEPUTUSAN RUBRIK
-                    </button>
+                    <div id="rubrikConfigBuilder" class="space-y-6"></div>
                 </div>
             </div>
 
-            <!-- TAB 3: REKOD PRESTASI -->
+            <!-- TAB 3: ANALISIS RAKAN SEBAYA -->
+            <div id="ltab-peer_analisis" style="display:none;">
+                <div class="academic-card p-5 mb-5">
+                    <h3 class="font-serif-title text-lg font-bold text-slate-800">Analisis Penilaian Rakan Sebaya (360°)</h3>
+                    <p class="text-xs text-slate-500">Hasil maklum balas penilaian rakan sekelas bagi aspek Kepimpinan dan Kerjasama.</p>
+                </div>
+                <div id="peerAnalisisEmpty" class="academic-card p-12 text-center text-slate-400">
+                    <i class="fas fa-users-cog text-3xl mb-3"></i>
+                    <p class="text-xs">Sila pilih pelajar dari senarai di sebelah kiri untuk melihat dapatan penilaian rakan sebaya.</p>
+                </div>
+                <div id="peerAnalisisPanel" style="display:none;" class="space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="academic-card p-5">
+                            <h4 class="font-bold text-xs uppercase mb-3 text-teal-800">Ringkasan Skor Rakan</h4>
+                            <div class="text-4xl font-extrabold font-mono-score text-teal-600 mb-2" id="peerAvgScore">0.0 / 5</div>
+                            <div class="text-xs text-slate-500" id="peerCountText">Berdasarkan 0 penilaian.</div>
+                        </div>
+                        <div class="academic-card p-5">
+                            <h4 class="font-bold text-xs uppercase mb-3 text-slate-700">Pecahan Dimensi Penilaian</h4>
+                            <div class="space-y-2 text-xs" id="peerDimBreakdown"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: REKOD PRESTASI -->
             <div id="ltab-summary" style="display:none;">
                 <div class="academic-card p-5">
                     <div class="flex justify-between items-center mb-4">
@@ -321,7 +431,7 @@
                 </div>
             </div>
 
-            <!-- TAB 4: LAPORAN ANALISIS -->
+            <!-- TAB 5: LAPORAN ANALISIS -->
             <div id="ltab-laporan" style="display:none;">
                 <div class="academic-card p-5 mb-5 flex justify-between items-center bg-white border-l-4 border-rose-800">
                     <h3 class="font-serif-title text-lg font-bold text-slate-800">Analisis Taburan Gred (Peratusan 100%)</h3>
@@ -357,14 +467,15 @@
 <script>
 const API = "https://script.google.com/macros/s/AKfycbxufZgAB9OWBbVzGzBascudDu498uJB80q9PtWDAFWLzDCZD5MxYqGKvIRyC38JgkId1Q/exec";
 
-let sData = [], curS = null, curLecEmail = null, isAdminUser = false;
+let sData = [], curS = null, curLecEmail = null, isAdminUser = false, userRole = 'lec';
+let activeRubricConfig = [];
 
-const RUBRIK_CONFIG = [
-    { id: 't1_hpp2', title: 'Tugasan 1: Persembahan (HPP2 - Kognitif 10m)', max: 10, color: 'var(--t1-color)', prefix: 'p_hpp2', desc: 'Kejelasan idea, hujah & penguasaan tajuk (10m)' },
-    { id: 't1_hpp5', title: 'Tugasan 1: Persembahan (HPP5 - Komunikasi 10m)', max: 10, color: 'var(--t1-color)', prefix: 'p_hpp5', desc: 'Kelancaran penyampaian lisan & keyakinan (10m)' },
-    { id: 't2_hpp2', title: 'Tugasan 2: Penulisan (HPP2 - Kognitif 30m)', max: 30, color: 'var(--t2-color)', prefix: 't_hpp2', desc: 'Kupasan kritis, hujah bernas & kefahaman akidah (30m)' },
-    { id: 't2_hpp11', title: 'Tugasan 2: Penulisan (HPP11 - Etika 5m)', max: 5, color: 'var(--t2-color)', prefix: 't_hpp11', desc: 'Etika penulisan, format rujukan & integriti (5m)' },
-    { id: 't2_vbe', title: 'Tugasan 2: Penulisan (VBE Keadilan 5m)', max: 5, color: '#9f1239', prefix: 't_vbe', desc: 'Penonjolan nilai keadilan & wasatiyyah (5m)' }
+const PEER_QUESTIONS = [
+    { id: 'q1', text: '1. Rakan ini menunjukkan pemikiran kritis dan kepimpinan dalam tugasan.' },
+    { id: 'q2', text: '2. Rakan ini menunjukkan kelancaran komunikasi dan hubungan interpersonal.' },
+    { id: 'q3', text: '3. Rakan ini proaktif dan bertanggungjawab menyiapkan bahagian tugasan.' },
+    { id: 'q4', text: '4. Rakan ini menghormati pandangan rakan lain dan berkongsi maklumat.' },
+    { id: 'q5', text: '5. Rakan ini komited dan membantu mengekalkan suasana kerja harmonis.' }
 ];
 
 function showToast(msg, type='success') {
@@ -385,6 +496,25 @@ function calcGred(markah60) {
     if(pct>=40) return "C-"; if(pct>=30) return "D+"; if(pct>=20) return "D"; return "F";
 }
 
+function setRole(role) {
+    userRole = role;
+    if (role === 'stud') {
+        document.getElementById('btnRoleStud').className = "flex-1 py-2 text-xs font-bold rounded-md bg-white text-teal-800 shadow-sm";
+        document.getElementById('btnRoleLec').className = "flex-1 py-2 text-xs font-bold rounded-md text-slate-500";
+        document.getElementById('pwArea').style.display = 'none';
+        document.getElementById('idLabel').textContent = "No. Kad Pengenalan Pelajar";
+        document.getElementById('idIn').value = "010203085541";
+        document.getElementById('bypassBtn').style.display = 'none';
+    } else {
+        document.getElementById('btnRoleLec').className = "flex-1 py-2 text-xs font-bold rounded-md bg-white text-teal-800 shadow-sm";
+        document.getElementById('btnRoleStud').className = "flex-1 py-2 text-xs font-bold rounded-md text-slate-500";
+        document.getElementById('pwArea').style.display = 'block';
+        document.getElementById('idLabel').textContent = "Emel Rasmi Pensyarah / Penyelaras";
+        document.getElementById('idIn').value = "admin@ipgm.edu.my";
+        document.getElementById('bypassBtn').style.display = 'block';
+    }
+}
+
 async function autoLoginBypass() {
     document.getElementById('idIn').value = 'admin@ipgm.edu.my';
     document.getElementById('pwIn').value = 'admin';
@@ -392,26 +522,122 @@ async function autoLoginBypass() {
 }
 
 async function handleAuth() {
-    const id = document.getElementById('idIn').value.trim() || 'admin@ipgm.edu.my';
-    const pw = document.getElementById('pwIn').value || 'admin';
-    
-    const btn = document.getElementById('loginBtn'); 
+    const id = document.getElementById('idIn').value.trim();
+    const pw = document.getElementById('pwIn').value;
+    const btn = document.getElementById('loginBtn');
     if(btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Mengesahkan...'; }
 
     try {
-        const r = await fetch(`${API}?action=lecturerLogin&email=${encodeURIComponent(id)}&pass=${encodeURIComponent(pw)}`);
-        const o = await r.json();
-        curLecEmail = id;
-        isAdminUser = true;
-        initLec(id, o.name || "Penyelaras PIMK6013 (Admin)", true);
-        showToast('Log Masuk Berjaya Disahkan!');
+        if (userRole === 'stud') {
+            const r = await fetch(`${API}?action=checkLogin&noKP=${encodeURIComponent(id)}`);
+            const o = await r.json();
+            if (o.status === "success") {
+                initStud(o.data);
+                showToast('Log Masuk Pelajar Berjaya!');
+            } else {
+                showToast(o.message || 'No. KP tidak dijumpai', 'warn');
+            }
+        } else {
+            const r = await fetch(`${API}?action=lecturerLogin&email=${encodeURIComponent(id)}&pass=${encodeURIComponent(pw)}`);
+            const o = await r.json();
+            curLecEmail = id;
+            isAdminUser = true;
+            initLec(id, o.name || "Penyelaras PIMK6013 (Admin)", true);
+            showToast('Log Masuk Berjaya Disahkan!');
+        }
     } catch(e) {
-        curLecEmail = id;
-        isAdminUser = true;
-        initLec(id, "Penyelaras PIMK6013 (Admin)", true);
-        showToast('Log Masuk Automatik Disahkan');
+        if (userRole === 'lec') {
+            curLecEmail = id;
+            isAdminUser = true;
+            initLec(id, "Penyelaras PIMK6013 (Admin)", true);
+            showToast('Log Masuk Automatik Disahkan');
+        } else {
+            showToast('Ralat sambungan pelayan', 'warn');
+        }
     }
     if(btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i> Log Masuk Sistem'; }
+}
+
+async function initStud(studentData) {
+    curS = studentData;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('studentDash').style.display = 'flex';
+    document.getElementById('studName').textContent = studentData.Nama_Pelajar;
+    
+    // Load Classmates for Peer Evaluation
+    try {
+        const r = await fetch(`${API}?action=getClassmates&noKP=${studentData.No_KP}&kelas=${encodeURIComponent(studentData.Kelas)}`);
+        const o = await r.json();
+        const classmates = o.data || [];
+        const doneSet = new Set(o.done || []);
+        
+        document.getElementById('peerProgress').textContent = `${doneSet.size}/${classmates.length}`;
+        document.getElementById('peerList').innerHTML = classmates.map(c => `
+            <div class="s-card ${doneSet.has(c.No_KP)?'done':''}" onclick="selectPeerTarget('${c.No_KP}', '${c.Nama_Pelajar.replace(/'/g,"\\'")}', ${doneSet.has(c.No_KP)})">
+                <div class="font-bold text-xs">${c.Nama_Pelajar}</div>
+                <div class="font-mono-score text-[10px] text-slate-500">${c.No_KP}</div>
+            </div>
+        `).join('') || `<div class="p-4 text-xs text-slate-400">Tiada rakan sekelas dijumpai</div>`;
+    } catch(e) {}
+}
+
+let activePeerTargetKP = null;
+function selectPeerTarget(kp, name, isDone) {
+    activePeerTargetKP = kp;
+    document.getElementById('peerEmpty').style.display = 'none';
+    document.getElementById('peerForm').style.display = 'block';
+    document.getElementById('peerTargetName').textContent = name;
+    document.getElementById('peerStatusBadge').textContent = isDone ? "Telah Dinilai" : "Belum Dinilai";
+    document.getElementById('peerStatusBadge').className = isDone ? "text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800" : "text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-600";
+    
+    document.getElementById('peerQuestions').innerHTML = PEER_QUESTIONS.map(q => `
+        <div class="p-3 bg-slate-50 border rounded-lg">
+            <label class="font-bold text-xs text-slate-700 mb-2 block">${q.text}</label>
+            <div class="flex gap-2">
+                ${[1,2,3,4,5].map(v => `<button type="button" class="likert-btn" id="btn_${q.id}_${v}" onclick="setLikert('${q.id}', ${v})">${v}</button>`).join('')}
+            </div>
+            <input type="hidden" id="val_${q.id}" value="0">
+        </div>
+    `).join('');
+}
+
+function setLikert(qId, val) {
+    document.getElementById('val_' + qId).value = val;
+    [1,2,3,4,5].forEach(v => {
+        const btn = document.getElementById(`btn_${qId}_${v}`);
+        if(btn) btn.className = v === val ? "likert-btn active" : "likert-btn";
+    });
+}
+
+async function submitPeerEval() {
+    if(!activePeerTargetKP) return;
+    const vals = PEER_QUESTIONS.map(q => Number(document.getElementById('val_' + q.id).value));
+    if (vals.some(v => v === 0)) {
+        return showToast('Sila berikan penilaian skala 1-5 untuk semua soalan.', 'warn');
+    }
+
+    const btn = document.getElementById('btnPeerSubmit');
+    btn.disabled = true;
+    try {
+        await fetch(API, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                action: "submitPeerEval",
+                evaluatorKP: curS.No_KP,
+                evaluatorName: curS.Nama_Pelajar,
+                evaluatorKelas: curS.Kelas,
+                targetKP: activePeerTargetKP,
+                targetName: document.getElementById('peerTargetName').textContent,
+                targetKelas: curS.Kelas,
+                q1: vals[0], q2: vals[1], q3: vals[2], q4: vals[3], q5: vals[4],
+                note: document.getElementById('peerNote').value
+            })
+        });
+        showToast('Penilaian Rakan Berjaya Dihantar!');
+        setTimeout(() => initStud(curS), 1000);
+    } catch(e) {}
+    btn.disabled = false;
 }
 
 async function initLec(email, name, isAdmin) {
@@ -420,6 +646,8 @@ async function initLec(email, name, isAdmin) {
     document.getElementById('lecName').textContent = name || email;
     document.getElementById('adminBadge').style.display = 'inline-block';
     
+    await loadRubricConfig();
+
     try {
         const r = await fetch(`${API}?action=getLecturerStudents&email=${encodeURIComponent(email)}`); 
         const o = await r.json();
@@ -435,6 +663,15 @@ async function initLec(email, name, isAdmin) {
     } catch(e) {}
 }
 
+async function loadRubricConfig() {
+    try {
+        const r = await fetch(`${API}?action=getRubrikConfig`);
+        const o = await r.json();
+        activeRubricConfig = o.config || [];
+        renderRubricConfigBuilder();
+    } catch(e){}
+}
+
 function filterStudents() {
     const q = document.getElementById('searchStudent').value.toLowerCase();
     const c = document.getElementById('classFilter').value;
@@ -447,7 +684,7 @@ function filterStudents() {
 }
 
 function showLecTab(t) {
-    ['marking','rubrik','summary','laporan'].forEach(id => {
+    ['marking','rubrik','peer_analisis','summary','laporan'].forEach(id => {
         const el = document.getElementById('ltab-' + id); 
         if(el) el.style.display = 'none';
     });
@@ -460,8 +697,23 @@ function showLecTab(t) {
         document.getElementById('gradingEmpty').style.display = 'none'; 
     }
     if(t === 'rubrik' && curS) showRubrik(curS);
+    if(t === 'peer_analisis' && curS) loadPeerAnalisis(curS);
     if(t === 'summary') renderSummaryTable();
     if(t === 'laporan') loadGradeSummary();
+}
+
+function switchRubrikSubTab(sub) {
+    if (sub === 'form') {
+        document.getElementById('rubrikSubTabForm').style.display = 'block';
+        document.getElementById('rubrikSubTabConfig').style.display = 'none';
+        document.getElementById('subTabRubrikForm').className = "px-4 py-2 text-xs font-bold border-b-2 border-teal-700 text-teal-800";
+        document.getElementById('subTabRubrikConfig').className = "px-4 py-2 text-xs font-bold border-b-2 border-transparent text-slate-500";
+    } else {
+        document.getElementById('rubrikSubTabForm').style.display = 'none';
+        document.getElementById('rubrikSubTabConfig').style.display = 'block';
+        document.getElementById('subTabRubrikForm').className = "px-4 py-2 text-xs font-bold border-b-2 border-transparent text-slate-500";
+        document.getElementById('subTabRubrikConfig').className = "px-4 py-2 text-xs font-bold border-b-2 border-teal-700 text-teal-800";
+    }
 }
 
 function selStud(kp) {
@@ -488,6 +740,7 @@ function selStud(kp) {
     }
     calc();
     if(document.getElementById('ltab-rubrik').style.display === 'block') showRubrik(curS);
+    if(document.getElementById('ltab-peer_analisis').style.display === 'block') loadPeerAnalisis(curS);
 }
 
 function calc() {
@@ -542,17 +795,28 @@ async function showRubrik(s) {
 }
 
 function renderRubrikInput(d) {
-    document.getElementById('lecRubrikContainer').innerHTML = RUBRIK_CONFIG.map(cat => {
-        const v = d ? d[cat.prefix] || 0 : 0;
-        return `<div class="p-4 border rounded-lg bg-slate-50 border-l-4" style="border-left-color:${cat.color}">
-            <h4 class="font-bold text-xs mb-1" style="color:${cat.color}">${cat.title}</h4>
-            <div class="flex justify-between items-center">
-                <span class="text-xs text-slate-500">${cat.desc}</span>
-                <div class="flex items-center gap-1">
-                    <input type="number" id="rub_${cat.prefix}" min="0" max="${cat.max}" step="0.1" value="${v ? fmt1(v) : ''}" class="w-16 text-center font-bold font-mono-score border-slate-300">
-                    <span class="text-xs font-bold text-slate-400">/ ${cat.max}</span>
-                </div>
-            </div>
+    const configToUse = activeRubricConfig.length ? activeRubricConfig : [
+        { taskName: 'Tugasan 1: Persembahan (HPP2 & HPP5)', color: 'var(--t1-color)', criteria: [{nama:'HPP2 (Kognitif 10m)', maxMark:10, prefix:'p_hpp2'}, {nama:'HPP5 (Komunikasi 10m)', maxMark:10, prefix:'p_hpp5'}] },
+        { taskName: 'Tugasan 2: Penulisan (HPP2, HPP11 & VBE)', color: 'var(--t2-color)', criteria: [{nama:'HPP2 (Kognitif 30m)', maxMark:30, prefix:'t_hpp2'}, {nama:'HPP11 (Etika 5m)', maxMark:5, prefix:'t_hpp11'}, {nama:'VBE (Keadilan 5m)', maxMark:5, prefix:'t_vbe'}] }
+    ];
+
+    document.getElementById('lecRubrikContainer').innerHTML = configToUse.map((task, tIdx) => {
+        return `<div class="p-4 border rounded-lg bg-slate-50 border-l-4 mb-4" style="border-left-color:${task.color || 'var(--primary)'}">
+            <h4 class="font-bold text-xs mb-3 text-slate-800">${task.taskName} — ${task.hpCode||''}</h4>
+            ${task.criteria.map((crit, cIdx) => {
+                const key = crit.prefix || (tIdx === 0 ? (cIdx===0?'p_hpp2':'p_hpp5') : (cIdx===0?'t_hpp2':cIdx===1?'t_hpp11':'t_vbe'));
+                const v = d ? d[key] || 0 : 0;
+                return `<div class="flex justify-between items-center bg-white p-2.5 rounded border mb-2">
+                    <div>
+                        <div class="text-xs font-bold text-slate-700">${crit.nama}</div>
+                        <div class="text-[10px] text-slate-400">${crit.desc||''}</div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <input type="number" id="rub_${key}" min="0" max="${crit.maxMark}" step="0.1" value="${v ? fmt1(v) : ''}" class="w-16 text-center font-bold font-mono-score border-slate-300">
+                        <span class="text-xs font-bold text-slate-400">/ ${crit.maxMark}</span>
+                    </div>
+                </div>`;
+            }).join('')}
         </div>`;
     }).join('');
 }
@@ -560,7 +824,10 @@ function renderRubrikInput(d) {
 async function saveRubrik() {
     if (!curS) return;
     const pl = {action:"submitRubrik", noKP:curS.No_KP, nama:curS.Nama_Pelajar, kelas:curS.Kelas, penilai:curLecEmail, data:{}};
-    RUBRIK_CONFIG.forEach(cat => pl.data[cat.prefix] = document.getElementById('rub_' + cat.prefix).value);
+    ['p_hpp2','p_hpp5','t_hpp2','t_hpp11','t_vbe'].forEach(k => {
+        const el = document.getElementById('rub_' + k);
+        if (el) pl.data[k] = el.value;
+    });
     document.getElementById('saveRubrikBtn').disabled = true;
     try {
         await fetch(API, {method:'POST', mode:'no-cors', body:JSON.stringify(pl)});
@@ -568,6 +835,104 @@ async function saveRubrik() {
         setTimeout(() => initLec(curLecEmail, document.getElementById('lecName').textContent, isAdminUser), 1000);
     } catch(e){}
     document.getElementById('saveRubrikBtn').disabled = false;
+}
+
+/* =========================================================================
+   PENETAPAN RUBRIK DINAMIK (DYNAMIC CONFIGURATOR)
+   ========================================================================= */
+function renderRubricConfigBuilder() {
+    const builder = document.getElementById('rubrikConfigBuilder');
+    if (!builder) return;
+
+    builder.innerHTML = activeRubricConfig.map((task, tIdx) => `
+        <div class="academic-card p-5 bg-white border border-slate-200">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full" style="background:${task.color||'var(--primary)'}"></span>
+                    <input type="text" value="${task.taskName}" onchange="updateTaskMeta(${tIdx}, 'taskName', this.value)" class="font-bold text-sm bg-slate-50 px-2 py-1 border rounded w-64">
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-500 font-bold">Markah Maksimum Keseluruhan:</span>
+                    <input type="number" value="${task.totalMax}" onchange="updateTaskMeta(${tIdx}, 'totalMax', this.value)" class="w-16 font-mono-score font-bold text-center text-xs border rounded">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="dim-label">Kod Hasil Pembelajaran (HP / CLO)</label>
+                <input type="text" value="${task.hpCode||''}" onchange="updateTaskMeta(${tIdx}, 'hpCode', this.value)" placeholder="cth: HPP2 (Kognitif) & HPP5 (Komunikasi)" class="w-full text-xs bg-slate-50">
+            </div>
+
+            <div class="space-y-3 mb-4">
+                <div class="text-xs font-extrabold uppercase text-slate-600 tracking-wider">Senarai Kriteria Penilaian</div>
+                ${task.criteria.map((crit, cIdx) => `
+                    <div class="p-3 bg-slate-50 border rounded-lg flex items-center gap-3">
+                        <div class="flex-1 space-y-1">
+                            <input type="text" value="${crit.nama}" onchange="updateCritMeta(${tIdx}, ${cIdx}, 'nama', this.value)" placeholder="Nama Kriteria" class="w-full text-xs font-bold bg-white">
+                            <input type="text" value="${crit.desc||''}" onchange="updateCritMeta(${tIdx}, ${cIdx}, 'desc', this.value)" placeholder="Penerangan / Deskripsi Kriteria" class="w-full text-[11px] text-slate-500 bg-white">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <input type="number" value="${crit.maxMark}" onchange="updateCritMeta(${tIdx}, ${cIdx}, 'maxMark', this.value)" class="w-16 text-center font-bold text-xs bg-white">
+                            <span class="text-xs text-slate-400 font-bold">m</span>
+                        </div>
+                        <button onclick="removeCriteria(${tIdx}, ${cIdx})" class="text-rose-600 hover:text-rose-800 p-2 text-xs"><i class="fas fa-trash"></i></button>
+                    </div>
+                `).join('')}
+            </div>
+
+            <button onclick="addCriteria(${tIdx})" class="w-full py-2 bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs flex items-center justify-center gap-1">
+                <i class="fas fa-plus-circle text-teal-700"></i> Tambah Kriteria
+            </button>
+        </div>
+    `).join('');
+}
+
+function updateTaskMeta(tIdx, key, val) { activeRubricConfig[tIdx][key] = key==='totalMax'?Number(val):val; }
+function updateCritMeta(tIdx, cIdx, key, val) { activeRubricConfig[tIdx].criteria[cIdx][key] = key==='maxMark'?Number(val):val; }
+function addCriteria(tIdx) {
+    activeRubricConfig[tIdx].criteria.push({ id: 'c' + (Date.now()), nama: 'Kriteria Baharu', desc: 'Penerangan kriteria...', maxMark: 5 });
+    renderRubricConfigBuilder();
+}
+function removeCriteria(tIdx, cIdx) {
+    if(activeRubricConfig[tIdx].criteria.length <= 1) return showToast('Setiap tugasan memerlukan sekurang-kurangnya 1 kriteria.', 'warn');
+    activeRubricConfig[tIdx].criteria.splice(cIdx, 1);
+    renderRubricConfigBuilder();
+}
+
+async function saveDynamicRubricConfig() {
+    try {
+        await fetch(API, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                action: "saveRubrikConfig",
+                config: activeRubricConfig,
+                penilai: curLecEmail
+            })
+        });
+        showToast('Tetapan Rubrik Berjaya Disimpan!');
+        if (curS) showRubrik(curS);
+    } catch(e) {
+        showToast('Ralat menyimpan tetapan rubrik', 'warn');
+    }
+}
+
+async function loadPeerAnalisis(s) {
+    document.getElementById('peerAnalisisEmpty').style.display = 'none';
+    document.getElementById('peerAnalisisPanel').style.display = 'block';
+    try {
+        const r = await fetch(`${API}?action=getPeerSummary&targetKP=${s.No_KP}`);
+        const o = await r.json();
+        document.getElementById('peerAvgScore').textContent = `${(o.avg||0).toFixed(1)} / 5`;
+        document.getElementById('peerCountText').textContent = `Berdasarkan ${o.count||0} maklum balas penilaian rakan sekelas.`;
+        
+        const dims = ['1. Kognitif', '2. Komunikasi', '3. Tanggungjawab', '4. Penghormatan', '5. Komitmen'];
+        document.getElementById('peerDimBreakdown').innerHTML = (o.avgDims||[0,0,0,0,0]).map((v,i) => `
+            <div class="flex justify-between items-center">
+                <span>${dims[i]}</span>
+                <span class="font-mono-score font-bold">${v.toFixed(1)} / 5</span>
+            </div>
+        `).join('');
+    } catch(e){}
 }
 
 function renderSummaryTable() {
