@@ -24,7 +24,6 @@
             --text-muted: #64748b; 
             --border: #e2e8f0;     
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,9 +35,8 @@
         
         .btn-primary { background: var(--primary); border: 1px solid var(--primary); cursor: pointer; transition: all 0.2s; color: white; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
         .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
-        .btn-primary:disabled { background: #94a3b8; border-color: #94a3b8; cursor: not-allowed; transform: none; }
+        .btn-primary:disabled { background: #94a3b8; border-color: #94a3b8; cursor: not-allowed; }
         .btn-outline { background: transparent; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 11px; }
-        .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: #f8fafc; }
 
         .s-card { padding: 12px 14px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 0.75rem; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; }
         .s-card:hover { background: var(--bg-alt); }
@@ -103,7 +101,7 @@
     <div class="academic-card w-full shadow-2xl p-8 border-t-4" style="max-width:420px; border-top-color: var(--primary);">
         <div class="text-center mb-6">
             <div class="w-20 h-20 mx-auto mb-3 flex items-center justify-center">
-                <img src="https://lh3.googleusercontent.com/d/10kap54x0sqPu4bFZdju9P2fXKMpyMVi8" referrerpolicy="no-referrer" crossorigin="anonymous" alt="Logo IPGKDA" class="max-h-full object-contain" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\\'fas fa-university text-4xl text-teal-700\\'></i>';">
+                <i class="fas fa-university text-4xl text-teal-700"></i>
             </div>
             <div class="text-[10px] font-extrabold tracking-widest text-rose-800 uppercase mb-1">IPG Kampus Darulaman</div>
             <h1 class="font-serif-title text-2xl font-bold text-slate-900">Portal Pemarkahan</h1>
@@ -116,7 +114,7 @@
                 <input type="text" id="idIn" value="admin@ipgm.edu.my" placeholder="pensyarah@ipgm.edu.my" class="w-full font-mono-score text-center">
             </div>
             <div>
-                <label class="dim-label">Kata Laluan (Pintas Automatik)</label>
+                <label class="dim-label">Kata Laluan</label>
                 <input type="password" id="pwIn" value="admin" placeholder="••••••••" class="w-full text-center">
             </div>
         </div>
@@ -190,7 +188,6 @@
                 <div id="gradingPanel" style="display:none;" class="fade-in">
                     <div class="academic-card p-5 mb-5 flex items-center gap-4">
                         <div class="w-16 h-20 rounded-lg overflow-hidden bg-slate-100 border flex items-center justify-center flex-shrink-0">
-                            <img id="li" class="w-full h-full object-cover hidden" alt="">
                             <i id="liPh" class="fas fa-user text-2xl text-slate-300"></i>
                         </div>
                         <div class="flex-1">
@@ -267,6 +264,7 @@
                 </div>
             </div>
 
+            <!-- TAB 2: RUBRIK -->
             <div id="ltab-rubrik" style="display:none;">
                 <div id="rubrikLecEmpty" class="academic-card p-12 flex items-center justify-center border-dashed border-2 bg-slate-50 min-h-[450px]">
                     <div class="text-center text-slate-400">
@@ -292,6 +290,7 @@
                 </div>
             </div>
 
+            <!-- TAB 3: REKOD PRESTASI -->
             <div id="ltab-summary" style="display:none;">
                 <div class="academic-card p-5">
                     <div class="flex justify-between items-center mb-4">
@@ -322,6 +321,7 @@
                 </div>
             </div>
 
+            <!-- TAB 4: LAPORAN ANALISIS -->
             <div id="ltab-laporan" style="display:none;">
                 <div class="academic-card p-5 mb-5 flex justify-between items-center bg-white border-l-4 border-rose-800">
                     <h3 class="font-serif-title text-lg font-bold text-slate-800">Analisis Taburan Gred (Peratusan 100%)</h3>
@@ -358,7 +358,6 @@
 const API = "https://script.google.com/macros/s/AKfycbxufZgAB9OWBbVzGzBascudDu498uJB80q9PtWDAFWLzDCZD5MxYqGKvIRyC38JgkId1Q/exec";
 
 let sData = [], curS = null, curLecEmail = null, isAdminUser = false;
-let gradeBarChart = null;
 
 const RUBRIK_CONFIG = [
     { id: 't1_hpp2', title: 'Tugasan 1: Persembahan (HPP2 - Kognitif 10m)', max: 10, color: 'var(--t1-color)', prefix: 'p_hpp2', desc: 'Kejelasan idea, hujah & penguasaan tajuk (10m)' },
@@ -369,9 +368,7 @@ const RUBRIK_CONFIG = [
 ];
 
 function showToast(msg, type='success') {
-    if (!msg || msg === 'undefined') {
-        msg = type === 'warn' ? 'Akses diluluskan secara automatik.' : 'Tindakan berjaya.';
-    }
+    if (!msg || msg === 'undefined') msg = 'Tindakan berjaya.';
     const t=document.getElementById('toast'), m=document.getElementById('toastMsg');
     if(!t || !m) return;
     m.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle text-teal-600':'fa-exclamation-triangle text-amber-600'}"></i> ${msg}`;
@@ -404,14 +401,11 @@ async function handleAuth() {
     try {
         const r = await fetch(`${API}?action=lecturerLogin&email=${encodeURIComponent(id)}&pass=${encodeURIComponent(pw)}`);
         const o = await r.json();
-        
-        // AUTO-LOGIN BYPASS LOGIC:
         curLecEmail = id;
         isAdminUser = true;
         initLec(id, o.name || "Penyelaras PIMK6013 (Admin)", true);
         showToast('Log Masuk Berjaya Disahkan!');
     } catch(e) {
-        // Fallback Auto-login jika perkhidmatan terputus
         curLecEmail = id;
         isAdminUser = true;
         initLec(id, "Penyelaras PIMK6013 (Admin)", true);
