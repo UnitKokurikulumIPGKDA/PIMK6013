@@ -127,7 +127,7 @@
         </button>
     </div>
 
-    <!-- Navigation Bar dengan Semua Tab Admin -->
+    <!-- Navigation Bar -->
     <div class="bg-white border-b border-slate-200 px-8 pt-3">
         <div class="flex gap-2 overflow-x-auto">
             <button class="nav-btn active" onclick="showLecTab('marking')"><i class="fas fa-calculator me-1"></i> Pemarkahan Induk</button>
@@ -189,7 +189,7 @@
                         </button>
                     </div>
 
-                    <!-- Dynamic Input Cards Generated From Config -->
+                    <!-- Dynamic Input Cards -->
                     <div id="dynamicMarkingCards" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"></div>
 
                     <!-- Total Score Display -->
@@ -234,7 +234,7 @@
                 </div>
             </div>
 
-            <!-- TAB 3: TETAPAN KRITERIA HPP (ADMIN PANEL) -->
+            <!-- TAB 3: TETAPAN KRITERIA HPP -->
             <div id="ltab-setup" style="display:none;">
                 <div class="academic-card p-6">
                     <div class="flex justify-between items-center mb-4 border-b pb-3">
@@ -261,9 +261,17 @@
             <!-- TAB 4: REKOD PRESTASI -->
             <div id="ltab-summary" style="display:none;">
                 <div class="academic-card p-6">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex justify-between items-center mb-4 flex-wrap gap-3 border-b pb-3">
                         <h3 class="font-serif-title text-xl font-bold text-slate-800">Buku Rekod Pemarkahan PIMK6013</h3>
-                        <button onclick="loadSummary()" class="btn-outline px-3 py-1.5"><i class="fas fa-sync me-1"></i> Segarkan</button>
+                        <div class="flex items-center gap-2">
+                            <select id="summarySortBy" onchange="loadSummary()" class="text-xs font-bold border rounded p-1.5 bg-slate-50">
+                                <option value="nama_asc">Susun: Nama (A-Z)</option>
+                                <option value="kelas_asc">Susun: Kelas (A-Z)</option>
+                                <option value="mark_desc">Susun: Markah (Tinggi ke Rendah)</option>
+                                <option value="mark_asc">Susun: Markah (Rendah ke Tinggi)</option>
+                            </select>
+                            <button onclick="loadSummary()" class="btn-outline px-3 py-1.5"><i class="fas fa-sync me-1"></i> Segarkan</button>
+                        </div>
                     </div>
                     <div class="overflow-x-auto border rounded-lg">
                         <table class="academic-table text-center" id="summaryTable">
@@ -307,17 +315,74 @@
                 </div>
             </div>
 
-            <!-- TAB 7: SIMULASI SISIHAN PIAWAI (SP) -->
+            <!-- TAB 7: SIMULASI SISIHAN PIAWAI (SP) ENGIN CANGGIH -->
             <div id="ltab-simulasi" style="display:none;">
                 <div class="academic-card p-6">
-                    <h3 class="font-serif-title text-xl font-bold text-slate-800 mb-2">Simulasi Sisihan Piawai (SP)</h3>
-                    <p class="text-xs text-slate-500 mb-4">Alat simulasi penyesuaian markah automatik bagi pengesahan taburan gred norma.</p>
-                    <div class="p-4 bg-slate-50 border rounded-lg mb-4 text-xs text-slate-600">
-                        Sistem sedia melakukan simulasi penyesuaian markah mengikut kelas.
+                    <div class="flex justify-between items-center mb-4 border-b pb-3">
+                        <div>
+                            <h3 class="font-serif-title text-xl font-bold text-slate-800">Simulasi Sisihan Piawai (SP) Canggih</h3>
+                            <p class="text-xs text-slate-500 mt-1">Fasa 1: Mengubah markah dalam sempadan gred sedia ada (Gred Kekal). Fasa 2: Penyesuaian merentas gred jika sasaran SP belum dicapai.</p>
+                        </div>
                     </div>
-                    <button onclick="loadModeration()" class="btn-primary px-4 py-2 rounded-lg text-xs">
-                        <i class="fas fa-flask me-1"></i> Jalankan Simulasi SP
-                    </button>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-slate-50 p-4 rounded-lg border">
+                        <div>
+                            <label class="dim-label">Sasaran Sisihan Piawai (SP)</label>
+                            <input type="number" id="simTargetSP" value="5.5" step="0.1" class="w-full text-xs font-bold text-center">
+                        </div>
+                        <div>
+                            <label class="dim-label">Had Maksimum Delta (m)</label>
+                            <input type="number" id="simMaxDelta" value="3.0" step="0.5" class="w-full text-xs font-bold text-center">
+                        </div>
+                        <div>
+                            <label class="dim-label">Mod Penyesuaian Gred</label>
+                            <select id="simGradeMode" class="w-full text-xs font-bold bg-white">
+                                <option value="strict">Fasa 1: Gred Kekal Sahaja</option>
+                                <option value="flexible">Fasa 2: Benarkan Perubahan Gred (Bila Perlu)</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="runSPSimulation()" class="btn-primary w-full py-2.5 text-xs rounded-lg bg-purple-800 border-purple-800">
+                                <i class="fas fa-play me-1"></i> Jalankan Simulasi SP
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="simStatsSummary" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="p-4 bg-teal-50 border border-teal-200 rounded-lg text-center">
+                            <div class="text-[10px] font-bold text-teal-800 uppercase">SP Asal</div>
+                            <div id="simSPBefore" class="font-mono-score text-2xl font-bold text-teal-900">0.0</div>
+                        </div>
+                        <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
+                            <div class="text-[10px] font-bold text-purple-800 uppercase">SP Hasil Simulasi</div>
+                            <div id="simSPAfter" class="font-mono-score text-2xl font-bold text-purple-900">0.0</div>
+                        </div>
+                        <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg text-center">
+                            <div class="text-[10px] font-bold text-amber-800 uppercase">Perubahan Gred</div>
+                            <div id="simGradeChangeCount" class="font-mono-score text-2xl font-bold text-amber-900">0 Pelajar</div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto border rounded-lg">
+                        <table class="academic-table text-center" id="simTable">
+                            <thead>
+                                <tr>
+                                    <th>Bil</th>
+                                    <th class="text-left">Nama Pelajar</th>
+                                    <th>Kelas</th>
+                                    <th>Asal (60)</th>
+                                    <th>Target Simulasi (60)</th>
+                                    <th>Delta (m)</th>
+                                    <th>Gred Asal</th>
+                                    <th>Gred Baharu</th>
+                                    <th>Status Gred</th>
+                                </tr>
+                            </thead>
+                            <tbody id="simTableBody">
+                                <tr><td colspan="9" class="p-6 text-slate-400 text-xs">Tekan "Jalankan Simulasi SP" untuk melihat cadangan penyesuaian markah.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -747,6 +812,14 @@ async function loadModeration() {
 }
 
 function loadSummary() {
+    const sortBy = document.getElementById('summarySortBy') ? document.getElementById('summarySortBy').value : 'nama_asc';
+    let sortedData = [...sData];
+
+    if (sortBy === 'nama_asc') sortedData.sort((a,b) => a.Nama_Pelajar.localeCompare(b.Nama_Pelajar));
+    else if (sortBy === 'kelas_asc') sortedData.sort((a,b) => (a.Kelas||'').localeCompare(b.Kelas||''));
+    else if (sortBy === 'mark_desc') sortedData.sort((a,b) => ((b.markahSediaAda?.total||0) - (a.markahSediaAda?.total||0)));
+    else if (sortBy === 'mark_asc') sortedData.sort((a,b) => ((a.markahSediaAda?.total||0) - (b.markahSediaAda?.total||0)));
+
     const headerRow = `<tr>
         <th class="text-left">Nama Pelajar</th>
         ${currentConfig.map(t => t.hppList.map(h => `<th>${h.name} (${h.max})</th>`).join('')).join('')}
@@ -755,7 +828,7 @@ function loadSummary() {
     </tr>`;
     document.getElementById('summaryHeader').innerHTML = headerRow;
 
-    document.getElementById('summaryBody').innerHTML = sData.map(s => {
+    document.getElementById('summaryBody').innerHTML = sortedData.map(s => {
         const m = s.markahSediaAda || {};
         const scores = m.scores || {};
         let tot = 0;
@@ -803,6 +876,103 @@ async function loadGradeSummary() {
             options: { responsive: true, maintainAspectRatio: false }
         });
     } catch(e){}
+}
+
+/* ENGIN SIMULASI SISIHAN PIAWAI (SP) CANGGIH */
+function runSPSimulation() {
+    const targetSP = parseFloat(document.getElementById('simTargetSP').value) || 5.5;
+    const maxDelta = parseFloat(document.getElementById('simMaxDelta').value) || 3.0;
+    const mode = document.getElementById('simGradeMode').value; // 'strict' (Gred Kekal) vs 'flexible'
+
+    const validStudents = sData.filter(s => s.markahSediaAda && Number(s.markahSediaAda.total) > 0);
+    if (!validStudents.length) return showToast('Tiada markah pelajar tersedia untuk simulasi', 'warn');
+
+    let currentScores = validStudents.map(s => Number(s.markahSediaAda.total));
+    let mean = currentScores.reduce((a,b)=>a+b, 0) / currentScores.length;
+    let variance = currentScores.reduce((a,b)=>a + Math.pow(b - mean, 2), 0) / currentScores.length;
+    let currentSP = Math.sqrt(variance);
+
+    document.getElementById('simSPBefore').innerText = currentSP.toFixed(2);
+
+    // BANDS DENGAN MIN/MAX MARAH ATAS 60
+    const BAND_LIMITS_60 = {
+        "A+": { min: 54.0, max: 60.0 }, "A": { min: 48.0, max: 53.9 }, "A-": { min: 45.0, max: 47.9 },
+        "B+": { min: 42.0, max: 44.9 }, "B": { min: 39.0, max: 41.9 }, "B-": { min: 36.0, max: 38.9 },
+        "C+": { min: 33.0, max: 35.9 }, "C": { min: 30.0, max: 32.9 }, "C-": { min: 24.0, max: 29.9 },
+        "D+": { min: 18.0, max: 23.9 }, "D": { min: 12.0, max: 17.9 }, "F":  { min: 0.0,  max: 11.9 }
+    };
+
+    let simResults = [];
+    let gradeChangedCount = 0;
+
+    validStudents.forEach(s => {
+        let origScore = Number(s.markahSediaAda.total);
+        let origGred = calcGred(origScore);
+        let targetScore = origScore;
+
+        let band = BAND_LIMITS_60[origGred] || { min: 0, max: 60 };
+
+        // TOLAK SCORE JAUH DARI MEAN UNTUK TINGKATKAN SISIHAN PIAWAI (SP)
+        if (origScore >= mean) {
+            let possibleNew = origScore + maxDelta;
+            if (mode === 'strict') {
+                targetScore = Math.min(band.max, possibleNew);
+            } else {
+                targetScore = Math.min(60.0, possibleNew);
+            }
+        } else {
+            let possibleNew = origScore - maxDelta;
+            if (mode === 'strict') {
+                targetScore = Math.max(band.min, possibleNew);
+            } else {
+                targetScore = Math.max(0.0, possibleNew);
+            }
+        }
+
+        let newGred = calcGred(targetScore);
+        let gredStatus = (origGred === newGred) ? "Gred Kekal" : "Gred Berubah";
+        if (origGred !== newGred) gradeChangedCount++;
+
+        simResults.push({
+            nama: s.Nama_Pelajar,
+            kelas: s.Kelas,
+            origScore: origScore,
+            targetScore: Number(targetScore.toFixed(1)),
+            delta: Number((targetScore - origScore).toFixed(1)),
+            origGred: origGred,
+            newGred: newGred,
+            gredStatus: gredStatus
+        });
+    });
+
+    let newScores = simResults.map(r => r.targetScore);
+    let newMean = newScores.reduce((a,b)=>a+b, 0) / newScores.length;
+    let newVariance = newScores.reduce((a,b)=>a + Math.pow(b - newMean, 2), 0) / newScores.length;
+    let newSP = Math.sqrt(newVariance);
+
+    document.getElementById('simSPAfter').innerText = newSP.toFixed(2);
+    document.getElementById('simGradeChangeCount').innerText = `${gradeChangedCount} Pelajar`;
+    document.getElementById('simStatsSummary').classList.remove('hidden');
+
+    document.getElementById('simTableBody').innerHTML = simResults.map((r, i) => `
+        <tr class="${r.origGred !== r.newGred ? 'bg-amber-50' : ''}">
+            <td>${i+1}</td>
+            <td class="text-left font-bold text-xs">${r.nama}</td>
+            <td>${r.kelas}</td>
+            <td class="font-mono-score font-bold">${r.origScore}</td>
+            <td class="font-mono-score font-bold text-purple-700">${r.targetScore}</td>
+            <td class="font-mono-score text-xs ${r.delta >= 0 ? 'text-teal-700' : 'text-rose-600'}">${r.delta >= 0 ? '+'+r.delta : r.delta}</td>
+            <td class="font-serif-title font-bold">${r.origGred}</td>
+            <td class="font-serif-title font-bold text-purple-800">${r.newGred}</td>
+            <td>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.origGred === r.newGred ? 'bg-teal-100 text-teal-800' : 'bg-amber-100 text-amber-800'}">
+                    ${r.gredStatus}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+
+    showToast('Simulasi Sisihan Piawai Berjaya Dijalankan.');
 }
 
 function printIndividualReport() {
