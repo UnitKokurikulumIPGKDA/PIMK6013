@@ -1,768 +1,1179 @@
-/**
- * BACKEND API — PORTAL PEMARKAHAN PIMK6013 (PENGAJIAN ILMU AKIDAH)
- * VERSI: FULL-STACK V19.0 (FIXED: STRICT POSITION-BINDING — HPP TIDAK LAGI HILANG)
- *
- * NOTA PEMBETULAN (V19.0):
- * BUG SEBELUM INI: sistem mencari lajur markah HPP menggunakan NAMA header
- * (contoh: col(mHead, `${hpp.id}_score`)). Apabila header di Google Sheet
- * ditukar/diformat semula secara manual (cth: "t1_hpp2 (10m)" bukan
- * "t1_hpp2_score"), carian nama itu GAGAL (-1) dan markah HPP individu
- * TIDAK PERNAH ditulis — walaupun JUMLAH_60 tetap betul kerana ia dikira
- * di JavaScript dahulu sebelum ditulis ke lajur bernama "JUMLAH_60".
- *
- * PEMBETULAN: semua bacaan/tulisan markah HPP & sub-kriteria kini
- * menggunakan KEDUDUKAN LAJUR (index) yang dikira terus daripada
- * CONFIG_KURSUS — bukan teks header. Ini menjamin ikatan baris-demi-baris
- * yang tegar (strict row-by-row position binding) tanpa bergantung
- * kepada label header yang mungkin diubah suai.
- *
- * @author Pakar Full-Stack Google Ekosistem
- */
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Pemarkahan PIMK6013 | Pengajian Ilmu Akidah</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #0f766e;    
+            --primary-hover: #115e59;
+            --secondary: #9f1239;  
+            --bg-body: #f8fafc;    
+            --bg-surface: #ffffff; 
+            --bg-alt: #f1f5f9;     
+            --text-main: #0f172a;  
+            --text-muted: #64748b; 
+            --border: #e2e8f0;     
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
 
-const SHEET_ID                 = "1eAN5n-teZsZIoQI_v6pMDp3dlGUJ4Wc4TScuCk4JHB4";
-const TARGET_FOLDER_ID         = "1arDwigoT9zos0CXSH53VJPb8mJou16ck";
+        /* Anti-select & Security Styling */
+        body { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
 
-const DATA_SHEET_NAME          = "DATA_PELAJAR";
-const LECTURER_SHEET_NAME      = "DATA_PENSYARAH";
-const MARKAH_SHEET_NAME        = "MARKAH_PELAJAR";
-const RUBRIK_SHEET_NAME        = "RUBRIK_PENUH";
-const CONFIG_SHEET_NAME        = "TETAPAN_RUBRIK";
-const MODERATION_SAMPLES_SHEET = "SAMPEL_MODERASI";
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-body); min-height: 100vh; color: var(--text-main); }
+        .font-serif-title { font-family: 'Lora', serif; }
+        .font-mono-score { font-family: 'Space Mono', monospace; }
+        .shell { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; }
+        .academic-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 1rem; box-shadow: var(--shadow-sm); }
+        
+        .btn-primary { background: var(--primary); border: 1px solid var(--primary); cursor: pointer; transition: all 0.2s ease-in-out; color: white; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: var(--shadow-sm); }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .btn-primary:disabled { background: #94a3b8; border-color: #94a3b8; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: #f8fafc; }
 
-const SUPER_ADMIN_EMAILS = ["hanifffaizal@gmail.com", "admin@ipgm.edu.my", "meharmadhafadz@ipgm.edu.my"];
+        .s-card { padding: 12px 14px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 0.75rem; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; }
+        .s-card:hover { background: var(--bg-alt); border-left-color: #94a3b8; }
+        .s-card.selected { background: #f0fdfa; border-left-color: var(--primary); border-color: #99f6e4; }
+        .s-card.done { border-left-color: #10b981; }
 
-// KONFIGURASI LALAI PIMK6013 (3 ARAS: TUGASAN -> HPP -> SUB-KRITERIA)
-const DEFAULT_CONFIG = [
-  {
-    id: "t1",
-    tugasan: "Tugasan 1: Persembahan (20%)",
-    hppList: [
-      {
-        id: "t1_hpp2", name: "HPP2: Kognitif", max: 10,
-        subKriteria: [
-          { id: "t1_hpp2_sub1", name: "Pendahuluan & Konsep", max: 5, desc: "Kejelasan konsep dan objektif (5m)" },
-          { id: "t1_hpp2_sub2", name: "Kandungan & Penutup", max: 5, desc: "Analisis dan kesimpulan bernas (5m)" }
-        ]
-      },
-      {
-        id: "t1_hpp5", name: "HPP5: Komunikasi", max: 10,
-        subKriteria: [
-          { id: "t1_hpp5_sub1", name: "Kelancaran Lisan", max: 5, desc: "Penyampaian lisan yang lancar (5m)" },
-          { id: "t1_hpp5_sub2", name: "Keyakinan & Interaksi", max: 5, desc: "Kawalan pentas dan soalan jawab (5m)" }
-        ]
-      }
-    ]
-  },
-  {
-    id: "t2",
-    tugasan: "Tugasan 2: Penulisan 1600 pp (40%)",
-    hppList: [
-      {
-        id: "t2_hpp2", name: "HPP2: Kognitif", max: 30,
-        subKriteria: [
-          { id: "t2_hpp2_sub1", name: "Analisis & Hujah Kritis", max: 30, desc: "Kupasan kritis berasaskan manhaj ASWJ (30m)" }
-        ]
-      },
-      {
-        id: "t2_hpp11", name: "HPP11: Etika Penulisan", max: 5,
-        subKriteria: [
-          { id: "t2_hpp11_sub1", name: "Format & Integriti", max: 5, desc: "Pematuhan gaya Rujukan dan integriti (5m)" }
-        ]
-      },
-      {
-        id: "t2_vbe", name: "VBE: Keadilan", max: 5,
-        subKriteria: [
-          { id: "t2_vbe_sub1", name: "Nilai Keadilan & Wasatiyyah", max: 5, desc: "Sikap keadilan dalam penulisan (5m)" }
-        ]
-      }
-    ]
-  }
-];
+        .scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+        .scroll-thin::-webkit-scrollbar-track { background: var(--bg-alt); border-radius: 10px; }
+        .scroll-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-const GRADE_BANDS = [
-  {min:90, max:100.001, gred:"A+", skala:"90 - 100"},
-  {min:80, max:89.9001,  gred:"A",  skala:"80 - 89.9"},
-  {min:75, max:79.9001,  gred:"A-", skala:"75 - 79.9"},
-  {min:70, max:74.9001,  gred:"B+", skala:"70 - 74.9"},
-  {min:65, max:69.9001,  gred:"B",  skala:"65 - 69.9"},
-  {min:60, max:64.9001,  gred:"B-", skala:"60 - 64.9"},
-  {min:55, max:59.9001,  gred:"C+", skala:"55 - 59.9"},
-  {min:50, max:54.9001,  gred:"C",  skala:"50 - 54.9"},
-  {min:40, max:49.9001,  gred:"C-", skala:"40 - 49.9"},
-  {min:30, max:39.9001,  gred:"D+", skala:"30 - 39.9"},
-  {min:20, max:29.9001,  gred:"D",  skala:"20 - 29.9"},
-  {min:10, max:19.9001,  gred:"E",  skala:"10 - 19.9"},
-  {min:0,  max:9.9001,   gred:"F",  skala:"00 - 09.9"}
-];
+        input[type=number], input[type=text], input[type=password], textarea, select { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-main); outline: none; transition: all 0.2s; border-radius: 0.5rem; padding: 0.6rem 0.8rem; }
+        input:focus, textarea:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1); }
 
-function normalizeKP(kp) {
-  if (!kp) return "";
-  let str = kp.toString().trim().replace(/['"\s]/g, '');
-  if (/^\d+$/.test(str) && str.length < 12) str = str.padStart(12, '0');
-  return str;
+        /* Amaran visual apabila input hampir/kena had maksimum */
+        input.score-input.at-max { border-color: #f59e0b !important; background: #fffbeb; }
+        input.score-input.invalid-flash { animation: flashWarn 0.4s ease; }
+        @keyframes flashWarn { 0% { background: #fee2e2; } 100% { background: var(--bg-surface); } }
+
+        #toast { position: fixed; top: 24px; right: 24px; z-index: 9999; transform: translateX(120%); transition: transform 0.3s ease; }
+        #toast.show { transform: translateX(0); }
+
+        .academic-table { width: 100%; border-collapse: collapse; font-size: 12.5px; background: var(--bg-surface); }
+        .academic-table th { background: var(--bg-alt); padding: 10px 12px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border); }
+        .academic-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+
+        .dim-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; display: block; }
+        .fade-in { animation: fadeIn 0.3s ease forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="toast">
+    <div class="academic-card px-5 py-4 flex items-center gap-3 text-sm font-bold shadow-lg" id="toastMsg" style="border-left: 4px solid var(--primary);"></div>
+</div>
+
+<div class="shell" id="loginScreen">
+    <div class="academic-card w-full shadow-2xl p-8 sm:p-10 border-t-4" style="max-width:440px; border-top-color: var(--primary);">
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 mx-auto mb-3 flex items-center justify-center bg-teal-50 text-teal-700 rounded-full border border-teal-200">
+                <i class="fas fa-book-quran text-3xl"></i>
+            </div>
+            <div class="text-[10px] font-extrabold tracking-widest text-teal-800 uppercase mb-1">IPG Kampus Darulaman</div>
+            <h1 class="font-serif-title text-2xl font-bold text-slate-800">Portal Pemarkahan</h1>
+            <p class="text-xs text-slate-500 font-medium mt-1">PIMK6013 — Pengajian Ilmu Akidah</p>
+        </div>
+
+        <div class="flex flex-col gap-4 mb-6">
+            <div>
+                <label class="dim-label">Emel Rasmi / Pengenal</label>
+                <input type="text" id="idIn" value="meharmadhafadz@ipgm.edu.my" class="w-full font-mono-score text-center text-sm">
+            </div>
+            <div>
+                <label class="dim-label">Kata Laluan</label>
+                <input type="password" id="pwIn" value="admin@ipgm.edu.my" class="w-full text-center text-sm">
+            </div>
+        </div>
+
+        <button onclick="handleAuth()" id="loginBtn" class="btn-primary w-full rounded-lg p-3 text-xs mb-3">
+            <i class="fas fa-sign-in-alt me-2"></i> Log Masuk Sistem
+        </button>
+
+        <button onclick="autoLoginBypass()" class="w-full py-2.5 px-4 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2">
+            <i class="fas fa-bolt text-amber-600"></i> Pintas Log Masuk (Auto-Login Admin)
+        </button>
+    </div>
+</div>
+
+<div id="lecturerDash" style="display:none;" class="min-h-screen flex-col">
+    <!-- Header -->
+    <div class="bg-teal-800 text-white px-8 py-4 flex items-center justify-between sticky top-0 z-50 shadow-md">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-teal-700/50 border border-teal-600 rounded-lg flex items-center justify-center text-lg">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div>
+                <div class="text-[10px] font-bold tracking-widest text-teal-200 uppercase">Penyelaras PIMK6013 (Admin)</div>
+                <div id="lecName" class="font-serif-title font-bold text-lg">--</div>
+            </div>
+        </div>
+        <button onclick="logout()" class="btn-outline border-teal-600 text-white hover:bg-teal-700 px-4 py-2 rounded-lg text-xs">
+            <i class="fas fa-sign-out-alt me-1"></i> Keluar
+        </button>
+    </div>
+
+    <!-- Navigation Bar -->
+    <div class="bg-white border-b border-slate-200 px-8 pt-3">
+        <div class="flex gap-2 overflow-x-auto">
+            <button class="nav-btn active" onclick="showLecTab('marking')"><i class="fas fa-calculator me-1"></i> Pemarkahan Induk</button>
+            <button class="nav-btn" onclick="showLecTab('rubrik')"><i class="fas fa-clipboard-list me-1"></i> Panel Rubrik</button>
+            <button class="nav-btn text-teal-800 font-extrabold" onclick="showLecTab('setup')"><i class="fas fa-sliders-h me-1"></i> ⚙️ Tetapan Kriteria HPP</button>
+            <button class="nav-btn" onclick="showLecTab('summary')"><i class="fas fa-table me-1"></i> Rekod Prestasi</button>
+            <button class="nav-btn" onclick="showLecTab('laporan')"><i class="fas fa-chart-pie me-1"></i> Analisis Gred</button>
+            <button class="nav-btn text-amber-800" onclick="showLecTab('moderasi')"><i class="fas fa-balance-scale me-1"></i> Moderasi LAM-PT-04-02</button>
+            <button class="nav-btn text-purple-800" onclick="showLecTab('simulasi')"><i class="fas fa-flask me-1"></i> Simulasi SP</button>
+        </div>
+        <style>
+            .nav-btn { background:transparent; border:none; padding:10px 16px; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; border-bottom:3px solid transparent; cursor:pointer; white-space:nowrap; }
+            .nav-btn.active { color:var(--primary); border-bottom-color:var(--primary); }
+        </style>
+    </div>
+
+    <div class="p-8 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 flex-1">
+        <!-- Student List Sidebar -->
+        <div class="academic-card p-4 sticky top-24 self-start max-h-[calc(100vh-120px)] flex flex-col">
+            <div class="text-xs font-bold uppercase tracking-wider mb-3 flex justify-between items-center text-slate-700">
+                <span>Senarai Pelajar</span>
+                <span id="studentCount" class="font-mono-score bg-slate-100 text-teal-800 text-[10px] px-2 py-0.5 rounded border">0</span>
+            </div>
+            <div class="mb-3 space-y-2">
+                <select id="classFilter" onchange="filterStudents()" class="w-full text-xs font-bold bg-slate-50 border rounded">
+                    <option value="">Semua Kelas</option>
+                </select>
+                <input type="text" id="searchStudent" placeholder="Cari nama atau KP..." class="w-full text-xs bg-slate-50 border rounded" onkeyup="filterStudents()">
+            </div>
+            <div id="sList" class="scroll-thin flex-1 overflow-y-auto pr-1"></div>
+        </div>
+
+        <div class="min-w-0">
+            <!-- TAB 1: PEMARKAHAN INDUK DYNAMIC -->
+            <div id="ltab-marking">
+                <div id="gradingEmpty" class="academic-card p-12 text-center border-dashed border-2 bg-slate-50 min-h-[450px] flex items-center justify-center">
+                    <div>
+                        <i class="fas fa-hand-pointer text-4xl text-slate-300 mb-3"></i>
+                        <h4 class="font-serif-title text-xl font-bold text-slate-700 mb-1">Pemarkahan Induk PIMK6013 (60%)</h4>
+                        <p class="text-xs text-slate-500 max-w-sm mx-auto">Sila pilih nama pelajar dari senarai di sebelah kiri untuk mengisi atau menyemak markah.</p>
+                    </div>
+                </div>
+
+                <div id="gradingPanel" style="display:none;" class="fade-in">
+                    <!-- Student Header Info -->
+                    <div class="academic-card p-5 mb-6 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-teal-50 text-teal-700 border rounded-full flex items-center justify-center flex-shrink-0 text-xl font-bold">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Calon PIMK6013</div>
+                                <div id="ln" class="font-serif-title text-xl font-bold text-slate-800">--</div>
+                                <div id="lk" class="font-mono-score text-xs text-slate-500 mt-1">--</div>
+                            </div>
+                        </div>
+                        <button onclick="printIndividualReport()" class="btn-outline text-xs px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 border-indigo-200">
+                            <i class="fas fa-file-pdf me-1"></i> Cetak Dossier
+                        </button>
+                    </div>
+
+                    <!-- Dynamic Input Cards -->
+                    <div id="dynamicMarkingCards" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"></div>
+
+                    <!-- Total Score Display -->
+                    <div class="academic-card p-6 bg-slate-900 text-white flex justify-between items-center mb-6">
+                        <div>
+                            <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">Jumlah Pentaksiran Berterusan</div>
+                            <div class="flex items-baseline gap-2">
+                                <span id="totalMark" class="font-mono-score text-5xl font-extrabold text-teal-400">0.0</span>
+                                <span class="text-lg text-slate-400 font-bold">/ 60</span>
+                            </div>
+                        </div>
+                        <div class="text-right border-l border-slate-700 pl-8">
+                            <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">Gred Abjad (Skala 100%) <span id="pctDisp" class="font-mono-score text-[10px] bg-slate-800 px-2 py-0.5 rounded text-teal-300">0.0%</span></div>
+                            <div id="gradeDisp" class="font-serif-title text-6xl font-bold text-amber-400">F</div>
+                        </div>
+                    </div>
+
+                    <button onclick="saveManual()" id="btnSaveManual" class="btn-primary w-full py-3.5 rounded-lg text-xs">
+                        <i class="fas fa-save me-2"></i> Simpan Pemarkahan PIMK6013
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: PANEL RUBRIK -->
+            <div id="ltab-rubrik" style="display:none;">
+                <div id="rubrikEmpty" class="academic-card p-12 text-center border-dashed border-2 bg-slate-50 min-h-[450px] flex items-center justify-center">
+                    <div class="text-slate-400">
+                        <i class="fas fa-clipboard-list text-4xl mb-3"></i>
+                        <h4 class="font-serif-title text-xl font-bold text-slate-700 mb-1">Borang Rubrik PIMK6013</h4>
+                        <p class="text-xs">Sila pilih pelajar dari senarai di sebelah kiri untuk mengisi atau mengesahkan rubrik.</p>
+                    </div>
+                </div>
+
+                <div id="rubrikPanel" style="display:none;" class="academic-card p-6 fade-in">
+                    <h2 class="font-serif-title text-xl font-bold text-slate-800 mb-4 border-b pb-3">
+                        Instrumen Rubrik: <span id="r_nama" class="text-teal-700">--</span>
+                    </h2>
+                    <div id="rubrikContainer" class="space-y-6"></div>
+                    <button onclick="saveRubrik()" id="btnSaveRubrik" class="btn-primary w-full py-3.5 rounded-lg text-xs mt-6">
+                        <i class="fas fa-check-circle me-2"></i> Sahkan &amp; Simpan Rubrik (Autokira ke Pemarkahan Induk)
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 3: TETAPAN KRITERIA HPP -->
+            <div id="ltab-setup" style="display:none;">
+                <div class="academic-card p-6">
+                    <div class="flex justify-between items-center mb-4 border-b pb-3">
+                        <div>
+                            <h3 class="font-serif-title text-xl font-bold text-slate-800">⚙️ Tetapan Kriteria HPP &amp; Sub-Kriteria PIMK6013</h3>
+                            <p class="text-xs text-slate-500 mt-1">Tentukan Tugasan, HPP/HPK, dan Sub-Kriteria (contoh: Pendahuluan 5%, Penutup 5% $\rightarrow$ HPP2 = 10%). Sistem akan menjana semula Header pada Google Sheet secara automatik.</p>
+                        </div>
+                        <button onclick="addTugasanBlock()" class="btn-outline px-3 py-1.5 bg-teal-50 text-teal-700 border-teal-200">
+                            <i class="fas fa-plus me-1"></i> Tambah Tugasan Baharu
+                        </button>
+                    </div>
+
+                    <div id="configEditorContainer" class="space-y-6"></div>
+
+                    <div class="mt-6 pt-4 border-t flex justify-end gap-3">
+                        <button onclick="loadConfigUI()" class="btn-outline px-4 py-2">Batal / Reset</button>
+                        <button onclick="saveConfigToServer()" id="btnSaveConfig" class="btn-primary px-6 py-2 rounded-lg text-xs">
+                            <i class="fas fa-cog me-2"></i> Simpan &amp; Jana Header Google Sheet
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: REKOD PRESTASI -->
+            <div id="ltab-summary" style="display:none;">
+                <div class="academic-card p-6">
+                    <div class="flex justify-between items-center mb-4 flex-wrap gap-3 border-b pb-3">
+                        <h3 class="font-serif-title text-xl font-bold text-slate-800">Buku Rekod Pemarkahan PIMK6013</h3>
+                        <div class="flex items-center gap-2">
+                            <select id="summarySortBy" onchange="loadSummary()" class="text-xs font-bold border rounded p-1.5 bg-slate-50">
+                                <option value="nama_asc">Susun: Nama (A-Z)</option>
+                                <option value="kelas_asc">Susun: Kelas (A-Z)</option>
+                                <option value="mark_desc">Susun: Markah (Tinggi ke Rendah)</option>
+                                <option value="mark_asc">Susun: Markah (Rendah ke Tinggi)</option>
+                            </select>
+                            <button onclick="loadSummary()" class="btn-outline px-3 py-1.5"><i class="fas fa-sync me-1"></i> Segarkan</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto border rounded-lg">
+                        <table class="academic-table text-center" id="summaryTable">
+                            <thead id="summaryHeader"></thead>
+                            <tbody id="summaryBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: ANALISIS GRED DENGAN KAD SISIHAN PIAWAI (SP) REAL-TIME -->
+            <div id="ltab-laporan" style="display:none;">
+                <div class="academic-card p-6 mb-6 flex justify-between items-center bg-white border-l-4" style="border-left-color: var(--secondary);">
+                    <div>
+                        <h3 class="font-serif-title text-xl font-bold text-slate-800">Analisis Taburan Gred PIMK6013</h3>
+                        <p class="text-xs text-slate-500 mt-1">Statistik masa nyata (real-time) dikira secara automatik daripada pangkalan data pelajar.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="laporanClassFilter" onchange="loadGradeSummary()" class="text-xs py-2 px-3 bg-slate-50 font-bold border rounded-lg">
+                            <option value="">Semua Kelas</option>
+                        </select>
+                        <button onclick="loadGradeSummary()" class="btn-outline px-3 py-2 bg-white"><i class="fas fa-sync-alt me-1"></i> Segar Semula</button>
+                        <button onclick="window.print()" class="btn-primary px-4 py-2 rounded-lg text-[11px]"><i class="fas fa-print me-2"></i> Cetak Laporan</button>
+                    </div>
+                </div>
+
+                <!-- KAD STATISTIK REAL-TIME (JUMLAH, PURATA MEAN, SISIHAN PIAWAI SP, JULAT) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="academic-card p-5 text-center border-t-4" style="border-top-color: var(--primary);">
+                        <div class="dim-label mb-1">JUMLAH CALON DINILAI</div>
+                        <div id="gradeTotalGradedVal" class="font-mono-score text-3xl font-black text-slate-800">0</div>
+                        <div class="text-[10px] text-slate-400 font-bold mt-1 uppercase">Penyertaan Terkumpul</div>
+                    </div>
+                    <div class="academic-card p-5 text-center border-t-4" style="border-top-color: #0d9488;">
+                        <div class="dim-label mb-1">PURATA MARKAH (MEAN)</div>
+                        <div id="gradeMinVal" class="font-mono-score text-3xl font-black text-teal-700">--</div>
+                        <div class="text-[10px] text-slate-400 font-bold mt-1 uppercase">Skala Maksimum 100%</div>
+                    </div>
+                    <div class="academic-card p-5 text-center border-t-4" style="border-top-color: var(--secondary);">
+                        <div class="dim-label mb-1">SISIHAN PIAWAI (SP)</div>
+                        <div id="gradeSDVal" class="font-mono-score text-3xl font-black text-rose-700">--</div>
+                        <div class="text-[10px] text-slate-400 font-bold mt-1 uppercase">Sebaran Markah Data</div>
+                    </div>
+                    <div class="academic-card p-5 text-center border-t-4" style="border-top-color: #7c3aed;">
+                        <div class="dim-label mb-1">JULAT MARKAH (MIN - MAX)</div>
+                        <div id="gradeRangeVal" class="font-mono-score text-2xl font-black text-purple-800">--</div>
+                        <div class="text-[10px] text-slate-400 font-bold mt-1 uppercase">Had Pencapaian Data</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 items-start">
+                    <div class="academic-card p-4 overflow-hidden">
+                        <table class="academic-table text-center">
+                            <thead><tr><th>Skala (100%)</th><th>Gred</th><th>Jumlah</th><th>%</th></tr></thead>
+                            <tbody id="gradeSummaryBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="academic-card p-6">
+                        <div class="h-80">
+                            <canvas id="gradeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: MODERASI LAM-PT-04-02 -->
+            <div id="ltab-moderasi" style="display:none;">
+                <div class="academic-card p-6">
+                    <h3 class="font-serif-title text-xl font-bold text-slate-800 mb-2">Modul Moderasi LAM-PT-04-02 (PIMK6013)</h3>
+                    <p class="text-xs text-slate-500 mb-4">Sistem menukar markah 60m secara automatik ke skala peratusan (100%) untuk persampelan 13 skrip terlaras.</p>
+                    <button onclick="loadModeration()" class="btn-outline px-3 py-1.5 mb-4"><i class="fas fa-sync me-1"></i> Segarkan Sampel Moderasi</button>
+                    <div class="overflow-x-auto border rounded-lg">
+                        <table class="academic-table text-center">
+                            <thead><tr><th>Bil</th><th>Nama Pelajar</th><th>Kelas</th><th>Markah Mentah (60)</th><th>% (100)</th><th>Gred</th></tr></thead>
+                            <tbody id="moderationBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 7: SIMULASI SISIHAN PIAWAI (SP) ENGIN CANGGIH -->
+            <div id="ltab-simulasi" style="display:none;">
+                <div class="academic-card p-6">
+                    <div class="flex justify-between items-center mb-4 border-b pb-3">
+                        <div>
+                            <h3 class="font-serif-title text-xl font-bold text-slate-800">Simulasi Sisihan Piawai (SP) Canggih</h3>
+                            <p class="text-xs text-slate-500 mt-1">Fasa 1: Mengubah markah dalam sempadan gred sedia ada (Gred Kekal). Fasa 2: Penyesuaian merentas gred jika sasaran SP belum dicapai.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-slate-50 p-4 rounded-lg border">
+                        <div>
+                            <label class="dim-label">Sasaran Sisihan Piawai (SP)</label>
+                            <input type="number" id="simTargetSP" value="5.5" step="0.1" class="w-full text-xs font-bold text-center">
+                        </div>
+                        <div>
+                            <label class="dim-label">Had Maksimum Delta (m)</label>
+                            <input type="number" id="simMaxDelta" value="3.0" step="0.5" class="w-full text-xs font-bold text-center">
+                        </div>
+                        <div>
+                            <label class="dim-label">Mod Penyesuaian Gred</label>
+                            <select id="simGradeMode" class="w-full text-xs font-bold bg-white">
+                                <option value="strict">Fasa 1: Gred Kekal Sahaja</option>
+                                <option value="flexible">Fasa 2: Benarkan Perubahan Gred (Bila Perlu)</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="runSPSimulation()" class="btn-primary w-full py-2.5 text-xs rounded-lg bg-purple-800 border-purple-800">
+                                <i class="fas fa-play me-1"></i> Jalankan Simulasi SP
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="simStatsSummary" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="p-4 bg-teal-50 border border-teal-200 rounded-lg text-center">
+                            <div class="text-[10px] font-bold text-teal-800 uppercase">SP Asal</div>
+                            <div id="simSPBefore" class="font-mono-score text-2xl font-bold text-teal-900">0.0</div>
+                        </div>
+                        <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
+                            <div class="text-[10px] font-bold text-purple-800 uppercase">SP Hasil Simulasi</div>
+                            <div id="simSPAfter" class="font-mono-score text-2xl font-bold text-purple-900">0.0</div>
+                        </div>
+                        <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg text-center">
+                            <div class="text-[10px] font-bold text-amber-800 uppercase">Perubahan Gred</div>
+                            <div id="simGradeChangeCount" class="font-mono-score text-2xl font-bold text-amber-900">0 Pelajar</div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto border rounded-lg">
+                        <table class="academic-table text-center" id="simTable">
+                            <thead>
+                                <tr>
+                                    <th>Bil</th>
+                                    <th class="text-left">Nama Pelajar</th>
+                                    <th>Kelas</th>
+                                    <th>Asal (60)</th>
+                                    <th>Target Simulasi (60)</th>
+                                    <th>Delta (m)</th>
+                                    <th>Gred Asal</th>
+                                    <th>Gred Baharu</th>
+                                    <th>Status Gred</th>
+                                </tr>
+                            </thead>
+                            <tbody id="simTableBody">
+                                <tr><td colspan="9" class="p-6 text-slate-400 text-xs">Tekan "Jalankan Simulasi SP" untuk melihat cadangan penyesuaian markah.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="printArea"></div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbxufZgAB9OWBbVzGzBascudDu498uJB80q9PtWDAFWLzDCZD5MxYqGKvIRyC38JgkId1Q/exec";
+
+let curLec = "meharmadhafadz@ipgm.edu.my";
+let sData = [], curS = null, chartInstance = null;
+let currentConfig = [];
+
+/* --- KAWALAN KESELAMATAN ANTI-INSPECT --- */
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+    if (e.key === 'F12' || e.keyCode === 123) e.preventDefault();
+    if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) e.preventDefault();
+    if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.key === 'S' || e.key === 's')) e.preventDefault();
+});
+
+function showToast(msg, type='success') {
+    const t = document.getElementById('toast'), m = document.getElementById('toastMsg');
+    if (!t || !m) return;
+    const cleanMsg = (msg && msg !== "undefined") ? msg : "Tindakan berjaya dilaksanakan.";
+    m.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle text-teal-600':'fa-exclamation-triangle text-amber-600'}"></i> <span>${cleanMsg}</span>`;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-function isSuperAdmin(email) {
-  if (!email) return true;
-  const target = email.toString().trim().toLowerCase();
-  return SUPER_ADMIN_EMAILS.some(e => e.toLowerCase() === target) || target.includes("admin") || target.includes("meharmad");
+function calcGred(total60) {
+    let pct = (total60 / 60) * 100;
+    if (pct >= 90) return "A+"; if (pct >= 80) return "A"; if (pct >= 75) return "A-"; if (pct >= 70) return "B+";
+    if (pct >= 65) return "B";  if (pct >= 60) return "B-"; if (pct >= 55) return "C+"; if (pct >= 50) return "C";
+    if (pct >= 40) return "C-"; if (pct >= 30) return "D+"; if (pct >= 20) return "D";  return "F";
 }
 
-function convertDriveUrl(url) {
-  if (!url) return "";
-  const m1 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (m1) return "https://drive.google.com/thumbnail?id=" + m1[1] + "&sz=w800";
-  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (m2) return "https://drive.google.com/thumbnail?id=" + m2[1] + "&sz=w800";
-  return url;
+function clampScore(el, maxVal) {
+    maxVal = Number(maxVal);
+    let raw = el.value;
+    let v = parseFloat(raw);
+
+    if (raw === '') { el.classList.remove('at-max'); return; }
+    if (isNaN(v)) v = 0;
+
+    if (v < 0) { v = 0; flashInvalid(el); }
+    if (v > maxVal) {
+        v = maxVal;
+        flashInvalid(el);
+        showToast(`Markah dihadkan kepada maksimum ${maxVal}m mengikut rubrik.`, 'warn');
+    }
+
+    el.value = v;
+    el.classList.toggle('at-max', v === maxVal && maxVal > 0);
 }
 
-function col(headers, name) {
-  const target = name.toString().trim().toLowerCase();
-  for (let i = 0; i < headers.length; i++) {
-    if (headers[i].toString().trim().toLowerCase() === target) return i;
-  }
-  return -1;
+function flashInvalid(el) {
+    el.classList.remove('invalid-flash');
+    void el.offsetWidth;
+    el.classList.add('invalid-flash');
 }
 
-function calculateGred(markahAtas60) {
-  let pct = (markahAtas60 / 60) * 100;
-  if (pct >= 90) return "A+"; if (pct >= 80) return "A"; if (pct >= 75) return "A-"; if (pct >= 70) return "B+";
-  if (pct >= 65) return "B";  if (pct >= 60) return "B-"; if (pct >= 55) return "C+"; if (pct >= 50) return "C";
-  if (pct >= 40) return "C-"; if (pct >= 30) return "D+"; if (pct >= 20) return "D";  return "F";
+function autoLoginBypass() {
+    curLec = "meharmadhafadz@ipgm.edu.my";
+    document.getElementById('lecName').innerText = "Penyelaras PIMK6013 (Admin)";
+    initLec();
 }
 
-function createResponse(p) {
-  return ContentService.createTextOutput(JSON.stringify(p)).setMimeType(ContentService.MimeType.JSON);
+async function handleAuth() {
+    const id = document.getElementById('idIn').value;
+    if (!id) return showToast('Sila masukkan emel', 'warn');
+    curLec = id;
+    document.getElementById('lecName').innerText = "Penyelaras PIMK6013 (Admin)";
+    initLec();
+}
+
+async function initLec() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('lecturerDash').style.display = 'flex';
+    try {
+        const r = await fetch(`${API}?action=getLecturerStudents&email=${encodeURIComponent(curLec)}`);
+        const o = await r.json();
+        sData = o.data || [];
+        currentConfig = o.config || [];
+        
+        const classes = [...new Set(sData.map(s => s.Kelas))].filter(Boolean);
+        ['classFilter','laporanClassFilter'].forEach(id => {
+            const cf = document.getElementById(id);
+            if (cf) cf.innerHTML = '<option value="">Semua Kelas</option>' + classes.map(c => `<option value="${c}">${c}</option>`).join('');
+        });
+
+        renderList();
+        renderDynamicGradingCards();
+        loadConfigUI();
+        loadSummary();
+        loadGradeSummary();
+        showToast('Data PIMK6013 & Tetapan Rubrik Berjaya Dimuat Turun.');
+    } catch(e) {
+        showToast('Gagal memuat turun data pelajar.', 'warn');
+    }
+}
+
+function renderList() {
+    const q = document.getElementById('searchStudent').value.toLowerCase();
+    const c = document.getElementById('classFilter').value;
+    const filtered = sData.filter(s => (s.Nama_Pelajar.toLowerCase().includes(q) || s.No_KP.includes(q)) && (!c || s.Kelas === c));
+    
+    document.getElementById('studentCount').innerText = filtered.length;
+    document.getElementById('sList').innerHTML = filtered.map(s => `
+        <div class="s-card ${s.markahSediaAda?'done':''}" onclick="selStud('${s.No_KP}')" data-kp="${s.No_KP}">
+            <div class="font-bold text-xs text-slate-800">${s.Nama_Pelajar}</div>
+            <div class="text-[10px] text-slate-500 font-mono-score mt-0.5">${s.Kelas} • ${s.No_KP}</div>
+        </div>
+    `).join('') || `<div class="text-center p-4 text-xs text-slate-400">Tiada pelajar.</div>`;
+}
+
+function filterStudents() { renderList(); }
+
+function renderDynamicGradingCards() {
+    const container = document.getElementById('dynamicMarkingCards');
+    if (!container) return;
+
+    container.innerHTML = currentConfig.map((t) => {
+        let tMax = t.hppList.reduce((sum, h) => sum + Number(h.max), 0);
+        let inputs = t.hppList.map(hpp => `
+            <div class="mb-3 flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100">
+                <div>
+                    <label class="dim-label mb-0 text-teal-800">${hpp.name}</label>
+                    <span class="text-[10px] text-slate-400">Maksimum HPP: ${hpp.max}m</span>
+                </div>
+                <input type="number" id="inp_${hpp.id}" min="0" max="${hpp.max}" step="0.1"
+                    class="score-input w-20 font-mono-score text-center font-bold text-lg border-teal-200 text-teal-700 bg-white"
+                    oninput="clampScore(this, ${hpp.max}); calc();"
+                    onblur="clampScore(this, ${hpp.max}); calc();">
+            </div>
+        `).join('');
+
+        return `
+            <div class="academic-card p-5 border-t-4" style="border-top-color: var(--primary);">
+                <div class="text-xs font-bold uppercase mb-4 pb-2 border-b flex justify-between">
+                    <span>${t.tugasan}</span>
+                    <span class="font-mono-score bg-slate-100 px-2 py-0.5 rounded border text-[10px]">${tMax}%</span>
+                </div>
+                ${inputs}
+            </div>
+        `;
+    }).join('');
+}
+
+function selStud(kp) {
+    curS = sData.find(s => s.No_KP == kp);
+    if (!curS) return;
+
+    document.querySelectorAll('.s-card').forEach(el => el.classList.remove('selected'));
+    const selEl = document.querySelector(`.s-card[data-kp="${kp}"]`);
+    if (selEl) selEl.classList.add('selected');
+
+    document.getElementById('ln').innerText = curS.Nama_Pelajar;
+    document.getElementById('lk').innerText = `ID: ${curS.No_KP} | Kelas: ${curS.Kelas}`;
+    document.getElementById('gradingEmpty').style.display = 'none';
+    document.getElementById('gradingPanel').style.display = 'block';
+
+    const scores = curS.markahSediaAda ? (curS.markahSediaAda.scores || {}) : {};
+    currentConfig.forEach(t => {
+        t.hppList.forEach(hpp => {
+            const el = document.getElementById(`inp_${hpp.id}`);
+            if (el) {
+                el.value = scores[hpp.id] !== undefined ? scores[hpp.id] : '';
+                if (el.value !== '') clampScore(el, hpp.max);
+            }
+        });
+    });
+
+    calc();
+    renderRubrikUI();
+}
+
+function calc() {
+    let tot = 0;
+    currentConfig.forEach(t => {
+        t.hppList.forEach(hpp => {
+            const el = document.getElementById(`inp_${hpp.id}`);
+            let v = el ? Number(el.value) || 0 : 0;
+            v = Math.min(hpp.max, Math.max(0, v));
+            tot += v;
+        });
+    });
+
+    document.getElementById('totalMark').innerText = tot.toFixed(1);
+    document.getElementById('pctDisp').innerText = ((tot / 60) * 100).toFixed(1) + '%';
+    document.getElementById('gradeDisp').innerText = calcGred(tot);
+}
+
+async function saveManual() {
+    if (!curS) return;
+    const btn = document.getElementById('btnSaveManual');
+    btn.disabled = true;
+
+    const payload = { action: 'submitScores', noKP: curS.No_KP, penilai: curLec, scores: {} };
+    currentConfig.forEach(t => {
+        t.hppList.forEach(hpp => {
+            const el = document.getElementById(`inp_${hpp.id}`);
+            if (el) clampScore(el, hpp.max);
+            payload.scores[hpp.id] = el ? el.value : 0;
+        });
+    });
+
+    try {
+        await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
+        showToast('Markah PIMK6013 Berjaya Disimpan');
+        setTimeout(initLec, 1200);
+    } catch(e) {
+        showToast('Ralat menyimpan markah.', 'warn');
+    }
+    btn.disabled = false;
+}
+
+async function renderRubrikUI() {
+    document.getElementById('rubrikEmpty').style.display = 'none';
+    document.getElementById('rubrikPanel').style.display = 'block';
+    document.getElementById('r_nama').innerText = curS.Nama_Pelajar;
+
+    let existingSubScores = {};
+    try {
+        const r = await fetch(`${API}?action=getRubrikStatus&noKP=${curS.No_KP}`);
+        const o = await r.json();
+        if (o.status === "success" && o.ada) {
+            existingSubScores = o.data || {};
+        }
+    } catch(e) {}
+
+    document.getElementById('rubrikContainer').innerHTML = currentConfig.map(t => `
+        <div class="academic-card p-5 border-l-4 border-teal-700 bg-white">
+            <h4 class="font-bold text-sm text-teal-900 mb-4 pb-2 border-b flex justify-between">
+                <span>${t.tugasan}</span>
+            </h4>
+            <div class="space-y-5">
+                ${t.hppList.map(hpp => {
+                    let subInputs = (hpp.subKriteria || []).map(sub => `
+                        <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded border border-slate-200">
+                            <div>
+                                <div class="text-xs font-bold text-slate-800">${sub.name}</div>
+                                <div class="text-[10px] text-slate-500">${sub.desc}</div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="r_sub_${sub.id}" data-hpp="${hpp.id}" data-max="${sub.max}"
+                                    value="${existingSubScores[sub.id] !== undefined ? existingSubScores[sub.id] : ''}"
+                                    max="${sub.max}" min="0" step="0.1"
+                                    class="score-input w-16 text-center font-bold text-xs bg-white border-teal-300"
+                                    oninput="clampScore(this, ${sub.max}); calcRubrikHPP('${hpp.id}')"
+                                    onblur="clampScore(this, ${sub.max}); calcRubrikHPP('${hpp.id}')">
+                                <span class="text-[10px] font-bold text-slate-400">/${sub.max}m</span>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    return `
+                        <div class="p-3 bg-teal-50/40 rounded-lg border border-teal-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="font-bold text-xs text-teal-900">${hpp.name}</div>
+                                <div class="text-xs font-mono-score font-bold bg-white px-2 py-0.5 rounded border border-teal-200 text-teal-800">
+                                    Jumlah HPP: <span id="r_hpp_total_${hpp.id}">0.0</span> / ${hpp.max}m
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                ${subInputs}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `).join('');
+
+    currentConfig.forEach(t => {
+        t.hppList.forEach(hpp => {
+            (hpp.subKriteria || []).forEach(sub => {
+                const el = document.getElementById(`r_sub_${sub.id}`);
+                if (el && el.value !== '') clampScore(el, sub.max);
+            });
+            calcRubrikHPP(hpp.id);
+        });
+    });
+}
+
+function calcRubrikHPP(hppId) {
+    let hppMax = 0;
+    currentConfig.forEach(t => t.hppList.forEach(h => { if (h.id === hppId) hppMax = Number(h.max); }));
+
+    let sum = 0;
+    const inputs = document.querySelectorAll(`input[data-hpp="${hppId}"]`);
+    inputs.forEach(inp => {
+        const maxAttr = Number(inp.dataset.max) || 0;
+        let v = Number(inp.value) || 0;
+        v = Math.min(maxAttr, Math.max(0, v));
+        sum += v;
+    });
+
+    if (hppMax > 0 && sum > hppMax) sum = hppMax;
+
+    const totalEl = document.getElementById(`r_hpp_total_${hppId}`);
+    if (totalEl) {
+        totalEl.innerText = sum.toFixed(1);
+        totalEl.style.color = (sum >= hppMax && hppMax > 0) ? '#0f766e' : '';
+    }
+
+    const mainInp = document.getElementById(`inp_${hppId}`);
+    if (mainInp) {
+        mainInp.value = sum.toFixed(1);
+        calc();
+    }
+}
+
+async function saveRubrik() {
+    if (!curS) return;
+    const btn = document.getElementById('btnSaveRubrik');
+    btn.disabled = true;
+
+    const payload = {
+        action: 'submitRubrik',
+        noKP: curS.No_KP,
+        nama: curS.Nama_Pelajar,
+        kelas: curS.Kelas,
+        penilai: curLec,
+        data: {}
+    };
+
+    if (!curS.markahSediaAda) curS.markahSediaAda = { scores: {} };
+    if (!curS.markahSediaAda.scores) curS.markahSediaAda.scores = {};
+
+    currentConfig.forEach(t => {
+        t.hppList.forEach(hpp => {
+            let hppSum = 0;
+            (hpp.subKriteria || []).forEach(sub => {
+                const el = document.getElementById(`r_sub_${sub.id}`);
+                if (el) clampScore(el, sub.max);
+                const val = el ? Number(el.value) || 0 : 0;
+                payload.data[sub.id] = val;
+                hppSum += val;
+            });
+            hppSum = Math.min(hpp.max, hppSum);
+            curS.markahSediaAda.scores[hpp.id] = hppSum;
+            const mainInp = document.getElementById(`inp_${hpp.id}`);
+            if (mainInp) mainInp.value = hppSum.toFixed(1);
+        });
+    });
+
+    calc();
+
+    try {
+        await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
+        showToast('Rubrik PIMK6013 Disahkan & Markah Induk Dikemas kini!');
+        setTimeout(initLec, 1200);
+    } catch(e) {
+        showToast('Ralat menyimpan rubrik.', 'warn');
+    }
+    btn.disabled = false;
+}
+
+function loadConfigUI() {
+    const container = document.getElementById('configEditorContainer');
+    if (!container) return;
+
+    container.innerHTML = currentConfig.map((t, tIdx) => `
+        <div class="academic-card p-5 bg-slate-50 border border-slate-200">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b">
+                <input type="text" value="${t.tugasan}" onchange="currentConfig[${tIdx}].tugasan = this.value" class="font-bold text-sm bg-white border px-2 py-1 w-2/3">
+                <button onclick="removeTugasanBlock(${tIdx})" class="text-rose-600 text-xs font-bold hover:underline"><i class="fas fa-trash me-1"></i> Padam Tugasan</button>
+            </div>
+            
+            <div class="space-y-4 mb-4">
+                ${t.hppList.map((hpp, hIdx) => `
+                    <div class="bg-white p-3 rounded border border-teal-200">
+                        <div class="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
+                            <input type="text" value="${hpp.id}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].id = this.value" placeholder="Kod HPP" class="w-24 text-xs font-mono-score font-bold">
+                            <input type="text" value="${hpp.name}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].name = this.value" placeholder="Nama HPP" class="flex-1 text-xs font-bold text-teal-800">
+                            <span class="text-xs font-bold text-slate-500">Jumlah HPP (Max):</span>
+                            <input type="number" value="${hpp.max}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].max = Number(this.value)" placeholder="Max" class="w-16 text-xs text-center font-bold">
+                            <button onclick="removeHPPItem(${tIdx}, ${hIdx})" class="text-rose-500 text-xs px-2"><i class="fas fa-trash"></i> Padam HPP</button>
+                        </div>
+
+                        <!-- SUB KRITERIA LIST -->
+                        <div class="pl-4 space-y-2 border-l-2 border-teal-300 my-2">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase">Sub-Kriteria Pecahan Markah</div>
+                            ${(hpp.subKriteria || []).map((sub, sIdx) => `
+                                <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200">
+                                    <input type="text" value="${sub.id}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].subKriteria[${sIdx}].id = this.value" placeholder="ID Sub" class="w-20 text-[10px] font-mono-score">
+                                    <input type="text" value="${sub.name}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].subKriteria[${sIdx}].name = this.value" placeholder="Nama Sub-Kriteria" class="w-1/3 text-xs font-bold">
+                                    <input type="number" value="${sub.max}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].subKriteria[${sIdx}].max = Number(this.value)" placeholder="Max" class="w-14 text-xs text-center font-bold">
+                                    <input type="text" value="${sub.desc}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].subKriteria[${sIdx}].desc = this.value" placeholder="Keterangan Sub-Kriteria" class="flex-1 text-xs">
+                                    <button onclick="removeSubKriteriaItem(${tIdx}, ${hIdx}, ${sIdx})" class="text-rose-500 text-xs px-1"><i class="fas fa-times"></i></button>
+                                </div>
+                            `).join('')}
+                            <button onclick="addSubKriteriaItem(${tIdx}, ${hIdx})" class="text-[10px] font-bold text-teal-700 bg-teal-50 px-2 py-1 rounded border border-teal-200 hover:bg-teal-100"><i class="fas fa-plus me-1"></i> Tambah Sub-Kriteria Pecahan</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <button onclick="addHPPItem(${tIdx})" class="btn-outline px-2.5 py-1.5 text-xs bg-white"><i class="fas fa-plus me-1"></i> Tambah Komponen HPP</button>
+        </div>
+    `).join('');
+}
+
+function addTugasanBlock() {
+    currentConfig.push({
+        id: "t" + (currentConfig.length + 1),
+        tugasan: "Tugasan " + (currentConfig.length + 1) + ": Baharu",
+        hppList: [{ id: "hpp_new", name: "HPP Baharu", max: 10, subKriteria: [{ id: "sub_1", name: "Pendahuluan", max: 5, desc: "Keterangan Kriteria" }] }]
+    });
+    loadConfigUI();
+}
+
+function removeTugasanBlock(tIdx) {
+    currentConfig.splice(tIdx, 1);
+    loadConfigUI();
+}
+
+function addHPPItem(tIdx) {
+    currentConfig[tIdx].hppList.push({ 
+        id: "hpp_" + Date.now().toString().slice(-4), 
+        name: "HPP Baharu", 
+        max: 10, 
+        subKriteria: [{ id: "sub_1", name: "Pecahan Kriteria 1", max: 5, desc: "Keterangan Kriteria" }] 
+    });
+    loadConfigUI();
+}
+
+function removeHPPItem(tIdx, hIdx) {
+    currentConfig[tIdx].hppList.splice(hIdx, 1);
+    loadConfigUI();
+}
+
+function addSubKriteriaItem(tIdx, hIdx) {
+    if (!currentConfig[tIdx].hppList[hIdx].subKriteria) {
+        currentConfig[tIdx].hppList[hIdx].subKriteria = [];
+    }
+    currentConfig[tIdx].hppList[hIdx].subKriteria.push({
+        id: "sub_" + Date.now().toString().slice(-4),
+        name: "Sub-Kriteria Baharu",
+        max: 5,
+        desc: "Keterangan Sub-Kriteria"
+    });
+    loadConfigUI();
+}
+
+function removeSubKriteriaItem(tIdx, hIdx, sIdx) {
+    currentConfig[tIdx].hppList[hIdx].subKriteria.splice(sIdx, 1);
+    loadConfigUI();
+}
+
+async function saveConfigToServer() {
+    for (const t of currentConfig) {
+        for (const hpp of t.hppList) {
+            const subTotal = (hpp.subKriteria || []).reduce((s, sub) => s + Number(sub.max || 0), 0);
+            if (subTotal !== Number(hpp.max)) {
+                showToast(`Amaran: Jumlah Sub-Kriteria bagi "${hpp.name}" (${subTotal}m) tidak sepadan dengan Max HPP (${hpp.max}m). Sila betulkan.`, 'warn');
+                return;
+            }
+        }
+    }
+
+    const btn = document.getElementById('btnSaveConfig');
+    btn.disabled = true;
+    try {
+        await fetch(API, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'saveRubrikConfig', config: currentConfig })
+        });
+        showToast('Tetapan HPP, Sub-Kriteria & Header Google Sheet Berjaya Dijana!');
+        setTimeout(initLec, 1500);
+    } catch(e) {
+        showToast('Ralat menyimpan tetapan.', 'warn');
+    }
+    btn.disabled = false;
+}
+
+function showLecTab(tab) {
+    ['marking','rubrik','setup','summary','laporan','moderasi','simulasi'].forEach(t => {
+        const el = document.getElementById('ltab-'+t);
+        if (el) el.style.display = 'none';
+    });
+    document.getElementById('ltab-'+tab).style.display = 'block';
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    
+    if (tab === 'moderasi') loadModeration();
+    if (tab === 'laporan') loadGradeSummary();
+}
+
+async function loadModeration() {
+    try {
+        const r = await fetch(`${API}?action=getModerationSampling&email=${encodeURIComponent(curLec)}`);
+        const o = await r.json();
+        const samples = o.samples || [];
+        document.getElementById('moderationBody').innerHTML = samples.map((s, i) => `
+            <tr>
+                <td class="font-mono-score">${i+1}</td>
+                <td class="font-bold text-left">${s.nama}</td>
+                <td>${s.kelas}</td>
+                <td class="font-mono-score font-bold">${s.markah}</td>
+                <td class="font-mono-score text-teal-700 font-bold">${s.markahPct.toFixed(1)}%</td>
+                <td class="font-serif-title font-bold">${s.gred}</td>
+            </tr>
+        `).join('') || `<tr><td colspan="6" class="p-4 text-slate-400">Tiada sampel moderasi.</td></tr>`;
+    } catch(e){}
+}
+
+function loadSummary() {
+    const sortBy = document.getElementById('summarySortBy') ? document.getElementById('summarySortBy').value : 'nama_asc';
+    let sortedData = [...sData];
+
+    if (sortBy === 'nama_asc') sortedData.sort((a,b) => a.Nama_Pelajar.localeCompare(b.Nama_Pelajar));
+    else if (sortBy === 'kelas_asc') sortedData.sort((a,b) => (a.Kelas||'').localeCompare(b.Kelas||''));
+    else if (sortBy === 'mark_desc') sortedData.sort((a,b) => ((b.markahSediaAda?.total||0) - (a.markahSediaAda?.total||0)));
+    else if (sortBy === 'mark_asc') sortedData.sort((a,b) => ((a.markahSediaAda?.total||0) - (b.markahSediaAda?.total||0)));
+
+    const headerRow = `<tr>
+        <th class="text-left">Nama Pelajar</th>
+        ${currentConfig.map(t => t.hppList.map(h => `<th>${h.name} (${h.max})</th>`).join('')).join('')}
+        <th class="bg-slate-200 text-slate-800">JUMLAH (60)</th>
+        <th class="bg-slate-200 text-slate-800">GRED (100%)</th>
+    </tr>`;
+    document.getElementById('summaryHeader').innerHTML = headerRow;
+
+    document.getElementById('summaryBody').innerHTML = sortedData.map(s => {
+        const m = s.markahSediaAda || {};
+        const scores = m.scores || {};
+        let tot = 0;
+
+        let cells = currentConfig.map(t => t.hppList.map(h => {
+            let val = scores[h.id] !== undefined ? scores[h.id] : (m[h.id] || 0);
+            tot += Number(val) || 0;
+            return `<td>${val || '-'}</td>`;
+        }).join('')).join('');
+
+        return `
+            <tr class="hover:bg-slate-50">
+                <td class="text-left font-bold text-xs">${s.Nama_Pelajar}</td>
+                ${cells}
+                <td class="font-mono-score font-bold bg-slate-100">${tot || '-'}</td>
+                <td class="font-serif-title font-bold text-teal-700 bg-slate-100">${tot ? calcGred(tot) : '-'}</td>
+            </tr>
+        `;
+    }).join('') || `<tr><td colspan="10" class="p-4 text-slate-400">Tiada rekod.</td></tr>`;
 }
 
 /* ============================================================
- * PENJANAAN PETA KEDUDUKAN LAJUR (POSITION MAP)
- * — INI TERAS PEMBETULAN V19.0.
- * Kedudukan lajur dikira terus daripada susunan CONFIG_KURSUS,
- * BUKAN daripada teks header. Ini menjamin data HPP & sub-kriteria
- * SENTIASA tertulis ke lajur yang betul walau header disunting.
+ * PENAMBAHBAIKAN UTAMA: PENGIRAAN REAL-TIME DARI PEMBOLEHUBAH `sData`
+ * Sisihan Piawai (SP), Mean %, Jumlah Pelajar & Julat %
  * ============================================================ */
+async function loadGradeSummary() {
+    const classFilter = document.getElementById('laporanClassFilter') ? document.getElementById('laporanClassFilter').value : "";
+    
+    // Tapis pelajar mengikut kelas jika dipilih
+    const filtered = sData.filter(s => !classFilter || s.Kelas === classFilter);
 
-// MARKAH_PELAJAR: ID_SISTEM(0) Nama_Pelajar(1) JANTINA(2) No_KP(3) No_Giliran(4) Kelas(5) [HPP...] JUMLAH_60 GRED_100 JUSTIFIKASI Penilai Tarikh_Masa
-function getHppPositionMap(config) {
-  const FIXED_PREFIX = 6;
-  const map = {};
-  let idx = FIXED_PREFIX;
-  (config || []).forEach(t => {
-    (t.hppList || []).forEach(hpp => {
-      map[hpp.id] = idx;
-      idx++;
-    });
-  });
-  map.__jumlahIdx  = idx;
-  map.__gredIdx    = idx + 1;
-  map.__justIdx    = idx + 2;
-  map.__penilaiIdx = idx + 3;
-  map.__tarikhIdx  = idx + 4;
-  map.__totalWidth = idx + 5; // jumlah bilangan lajur diperlukan
-  return map;
-}
+    // Kumpul semua markah sah (100% skala)
+    const validScores = filtered
+        .map(s => (s.markahSediaAda && Number(s.markahSediaAda.total) > 0) ? (Number(s.markahSediaAda.total) / 60) * 100 : 0)
+        .filter(v => v > 0);
 
-// RUBRIK_PENUH: Tarikh_Masa(0) No_KP(1) Nama_Pelajar(2) Kelas(3) [Sub-Kriteria...] Penilai Status
-function getSubPositionMap(config) {
-  const FIXED_PREFIX = 4;
-  const map = {};
-  let idx = FIXED_PREFIX;
-  (config || []).forEach(t => {
-    (t.hppList || []).forEach(hpp => {
-      (hpp.subKriteria || []).forEach(sub => {
-        map[sub.id] = idx;
-        idx++;
-      });
-    });
-  });
-  map.__penilaiIdx = idx;
-  map.__statusIdx  = idx + 1;
-  map.__totalWidth = idx + 2;
-  return map;
-}
+    const n = validScores.length;
 
-function getRubrikConfig() {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  let sheet = ss.getSheetByName(CONFIG_SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(CONFIG_SHEET_NAME);
-    sheet.appendRow(["CONFIG_JSON", "TARIKH_KEMASKINI"]);
-    sheet.appendRow([JSON.stringify(DEFAULT_CONFIG), new Date()]);
-    return DEFAULT_CONFIG;
-  }
-  const data = sheet.getDataRange().getValues();
-  if (data.length > 1 && data[1][0]) {
+    // 1. Kemas kini Kad Jumlah Calon
+    document.getElementById('gradeTotalGradedVal').innerText = n;
+
+    if (n > 0) {
+        // 2. Pengiraan Mean (Purata Markah)
+        const mean = validScores.reduce((a, b) => a + b, 0) / n;
+        
+        // 3. Pengiraan Variance & Sisihan Piawai (SP)
+        const variance = validScores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
+        const sd = Math.sqrt(variance);
+        
+        // 4. Pengiraan Julat Markah (Min - Max)
+        const minPct = Math.min(...validScores);
+        const maxPct = Math.max(...validScores);
+
+        document.getElementById('gradeMinVal').innerText = mean.toFixed(2) + '%';
+        document.getElementById('gradeSDVal').innerText = sd.toFixed(2);
+        document.getElementById('gradeRangeVal').innerText = `${minPct.toFixed(1)}% - ${maxPct.toFixed(1)}%`;
+    } else {
+        document.getElementById('gradeMinVal').innerText = '--';
+        document.getElementById('gradeSDVal').innerText = '--';
+        document.getElementById('gradeRangeVal').innerText = '--';
+    }
+
+    // 5. Kemas kini Jadual Band & Carta Bar
     try {
-      return JSON.parse(data[1][0]);
-    } catch(e) {
-      return DEFAULT_CONFIG;
-    }
-  }
-  return DEFAULT_CONFIG;
-}
+        const r = await fetch(`${API}?action=getGradeSummary&email=${encodeURIComponent(curLec)}&kelas=${encodeURIComponent(classFilter)}`);
+        const o = await r.json();
+        const bands = o.bands || [];
 
-function saveRubrikConfig(configObj) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  let sheet = ss.getSheetByName(CONFIG_SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(CONFIG_SHEET_NAME);
-    sheet.appendRow(["CONFIG_JSON", "TARIKH_KEMASKINI"]);
-  }
-  sheet.getRange(2, 1, 1, 2).setValues([[JSON.stringify(configObj), new Date()]]);
+        document.getElementById('gradeSummaryBody').innerHTML = bands.map(b => `
+            <tr>
+                <td class="font-mono-score text-xs">${b.skala}</td>
+                <td class="font-bold">${b.gred}</td>
+                <td class="font-mono-score font-bold">${b.jumlah}</td>
+                <td class="font-mono-score">${b.peratus}%</td>
+            </tr>
+        `).join('');
 
-  syncSheetHeadersWithConfig(ss, configObj);
-  ensureSheetsInSync(ss);
-  return createResponse({ status: "success", message: "Tetapan Rubrik & Header Google Sheet Berjaya Dijana!" });
-}
-
-function syncSheetHeadersWithConfig(ss, config) {
-  if (!ss) ss = SpreadsheetApp.openById(SHEET_ID);
-
-  const markahHeaders = ["ID_SISTEM", "Nama_Pelajar", "JANTINA", "No_KP", "No_Giliran", "Kelas"];
-  config.forEach(t => {
-    t.hppList.forEach(hpp => {
-      markahHeaders.push(`${hpp.id}_score`);
-    });
-  });
-  markahHeaders.push("JUMLAH_60", "GRED_100", "JUSTIFIKASI", "Penilai", "Tarikh_Masa");
-
-  let mSheet = ss.getSheetByName(MARKAH_SHEET_NAME);
-  if (!mSheet) mSheet = ss.insertSheet(MARKAH_SHEET_NAME);
-
-  mSheet.getRange(1, 1, 1, markahHeaders.length).setValues([markahHeaders])
-    .setBackground("#0f766e").setFontColor("white").setFontWeight("bold");
-
-  const rubrikHeaders = ["Tarikh_Masa", "No_KP", "Nama_Pelajar", "Kelas"];
-  config.forEach(t => {
-    t.hppList.forEach(hpp => {
-      (hpp.subKriteria || []).forEach(sub => {
-        rubrikHeaders.push(sub.id);
-      });
-    });
-  });
-  rubrikHeaders.push("Penilai", "Status");
-
-  let rSheet = ss.getSheetByName(RUBRIK_SHEET_NAME);
-  if (!rSheet) rSheet = ss.insertSheet(RUBRIK_SHEET_NAME);
-
-  rSheet.getRange(1, 1, 1, rubrikHeaders.length).setValues([rubrikHeaders])
-    .setBackground("#0f172a").setFontColor("white").setFontWeight("bold");
-}
-
-/**
- * PENTING: MENJAMIN SUSUNAN BARIS MARKAH_PELAJAR & RUBRIK_PENUH SENTIASA SEJAJAR 100%
- * DENGAN KEDUDUKAN NAMA PELAJAR DALAM DATA_PELAJAR — DAN LEBAR LAJUR SENTIASA
- * MENCUKUPI MENGIKUT CONFIG_KURSUS SEMASA (SELF-HEALING).
- */
-function ensureSheetsInSync(ss) {
-  if (!ss) ss = SpreadsheetApp.openById(SHEET_ID);
-  const config = getRubrikConfig();
-  const posMap = getHppPositionMap(config);
-  const subMap = getSubPositionMap(config);
-  const mColCount = posMap.__totalWidth;
-  const rColCount = subMap.__totalWidth;
-
-  const dSheet = ss.getSheetByName(DATA_SHEET_NAME);
-  if (!dSheet) return;
-
-  const dData = dSheet.getDataRange().getValues();
-  if (dData.length <= 1) return;
-
-  const dHead = dData[0];
-  const idIdx = col(dHead, "ID_SISTEM");
-  const namaIdx = col(dHead, "Nama_Pelajar");
-  const janIdx = col(dHead, "JANTINA");
-  const kpIdx = col(dHead, "No_KP");
-  const gilIdx = col(dHead, "No_Giliran");
-  const kelIdx = col(dHead, "Kelas");
-  const penIdx = col(dHead, "Penilai");
-
-  // 1. PENYELARASAN MARKAH_PELAJAR
-  let mSheet = ss.getSheetByName(MARKAH_SHEET_NAME);
-  if (!mSheet) {
-    syncSheetHeadersWithConfig(ss, config);
-    mSheet = ss.getSheetByName(MARKAH_SHEET_NAME);
-  }
-  // SELF-HEAL: jika lebar header sedia ada tidak mencukupi berbanding config semasa,
-  // jana semula header (data sedia ada TIDAK disentuh, hanya row 1).
-  if (mSheet.getLastColumn() < mColCount) {
-    syncSheetHeadersWithConfig(ss, config);
-  }
-
-  const mData = mSheet.getDataRange().getValues();
-
-  const existingMarkMap = {};
-  for (let j = 1; j < mData.length; j++) {
-    const kp = normalizeKP(mData[j][3]);
-    if (kp) existingMarkMap[kp] = mData[j];
-  }
-
-  const alignedMarkRows = [];
-  for (let i = 1; i < dData.length; i++) {
-    const kpNorm = normalizeKP(dData[i][kpIdx]);
-    if (!kpNorm) continue;
-
-    let existing = existingMarkMap[kpNorm];
-    let row = existing ? existing.slice() : [];
-    while (row.length < mColCount) row.push("");
-
-    if (!existing) {
-      row[0] = idIdx >= 0 ? dData[i][idIdx] : "";
-      row[1] = namaIdx >= 0 ? dData[i][namaIdx] : "";
-      row[2] = janIdx >= 0 ? dData[i][janIdx] : "";
-      row[3] = "'" + kpNorm;
-      row[4] = gilIdx >= 0 ? dData[i][gilIdx] : "";
-      row[5] = kelIdx >= 0 ? dData[i][kelIdx] : "";
-      row[posMap.__jumlahIdx]  = 0;
-      row[posMap.__gredIdx]    = "-";
-      row[posMap.__justIdx]    = "-";
-      row[posMap.__penilaiIdx] = penIdx >= 0 ? dData[i][penIdx] : "";
-    } else {
-      row[0] = idIdx >= 0 ? dData[i][idIdx] : row[0];
-      row[1] = namaIdx >= 0 ? dData[i][namaIdx] : row[1];
-      row[2] = janIdx >= 0 ? dData[i][janIdx] : row[2];
-      row[3] = "'" + kpNorm;
-      row[4] = gilIdx >= 0 ? dData[i][gilIdx] : row[4];
-      row[5] = kelIdx >= 0 ? dData[i][kelIdx] : row[5];
-      if (!row[posMap.__penilaiIdx]) row[posMap.__penilaiIdx] = penIdx >= 0 ? dData[i][penIdx] : "";
-      if (row[posMap.__jumlahIdx] === "" || row[posMap.__jumlahIdx] === undefined) row[posMap.__jumlahIdx] = 0;
-      if (!row[posMap.__gredIdx]) row[posMap.__gredIdx] = "-";
-    }
-    alignedMarkRows.push(row.slice(0, mColCount));
-  }
-
-  if (alignedMarkRows.length > 0) {
-    mSheet.getRange(2, 1, alignedMarkRows.length, mColCount).setValues(alignedMarkRows);
-  }
-
-  // 2. PENYELARASAN RUBRIK_PENUH
-  let rSheet = ss.getSheetByName(RUBRIK_SHEET_NAME);
-  if (!rSheet) {
-    syncSheetHeadersWithConfig(ss, config);
-    rSheet = ss.getSheetByName(RUBRIK_SHEET_NAME);
-  }
-  if (rSheet.getLastColumn() < rColCount) {
-    syncSheetHeadersWithConfig(ss, config);
-  }
-
-  const rData = rSheet.getDataRange().getValues();
-
-  const existingRubrikMap = {};
-  for (let j = 1; j < rData.length; j++) {
-    const kp = normalizeKP(rData[j][1]);
-    if (kp) existingRubrikMap[kp] = rData[j];
-  }
-
-  const alignedRubrikRows = [];
-  for (let i = 1; i < dData.length; i++) {
-    const kpNorm = normalizeKP(dData[i][kpIdx]);
-    if (!kpNorm) continue;
-
-    let existing = existingRubrikMap[kpNorm];
-    let row = existing ? existing.slice() : [];
-    while (row.length < rColCount) row.push("");
-
-    if (!existing) {
-      row[0] = "";
-      row[1] = "'" + kpNorm;
-      row[2] = namaIdx >= 0 ? dData[i][namaIdx] : "";
-      row[3] = kelIdx >= 0 ? dData[i][kelIdx] : "";
-      row[subMap.__penilaiIdx] = penIdx >= 0 ? dData[i][penIdx] : "";
-      row[subMap.__statusIdx]  = "Belum Dinilai";
-    } else {
-      row[1] = "'" + kpNorm;
-      row[2] = namaIdx >= 0 ? dData[i][namaIdx] : row[2];
-      row[3] = kelIdx >= 0 ? dData[i][kelIdx] : row[3];
-    }
-    alignedRubrikRows.push(row.slice(0, rColCount));
-  }
-
-  if (alignedRubrikRows.length > 0) {
-    rSheet.getRange(2, 1, alignedRubrikRows.length, rColCount).setValues(alignedRubrikRows);
-  }
-}
-
-function doGet(e) {
-  try {
-    const a = e.parameter ? e.parameter.action : "";
-    if (a === "checkLogin")                  return checkLogin(e.parameter.noKP);
-    if (a === "lecturerLogin")               return lecturerLogin(e.parameter.email, e.parameter.pass);
-    if (a === "getLecturerStudents")         return getLecturerStudents(e.parameter.email);
-    if (a === "getRubrikStatus")             return getRubrikStatus(e.parameter.noKP);
-    if (a === "getGradeSummary")             return getGradeSummary(e.parameter.email, e.parameter.kelas);
-    if (a === "getIndividualReportData")     return getIndividualReportData(e.parameter.noKP);
-    if (a === "getModerationSampling")       return getModerationSampling(e.parameter.email, e.parameter.kelas);
-    return createResponse({status:"error", message:"Aksi GET tidak dikenali"});
-  } catch(err) {
-    return createResponse({status:"error", message:err.toString()});
-  }
-}
-
-function doPost(e) {
-  try {
-    const p = JSON.parse(e.postData.contents);
-    if (p.action === "saveRubrikConfig")        return saveRubrikConfig(p.config);
-    if (p.action === "submitScores")            return submitScoresWithSync(p);
-    if (p.action === "submitRubrik")            return submitRubrik(p);
-    if (p.action === "uploadImage")             return uploadImage(p);
-    if (p.action === "applySimulationChanges")  return applySimulationChanges(p);
-    return createResponse({status:"error", message:"Aksi POST tidak dikenali"});
-  } catch(err) {
-    return createResponse({status:"error", message:err.toString()});
-  }
-}
-
-function checkLogin(noKP) {
-  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(DATA_SHEET_NAME);
-  const data = sheet.getDataRange().getValues();
-  const kpNorm = normalizeKP(noKP);
-  for (let i = 1; i < data.length; i++) {
-    if (normalizeKP(data[i][data[0].indexOf("No_KP")]) === kpNorm) {
-      let obj = {};
-      data[0].forEach((hdr, idx) => { obj[hdr] = (hdr === "Link_Gambar") ? convertDriveUrl(data[i][idx]) : data[i][idx]; });
-      obj["No_KP"] = kpNorm;
-      return createResponse({status:"success", data:obj});
-    }
-  }
-  return createResponse({status:"error", message:"No. KP tidak dijumpai!"});
-}
-
-function lecturerLogin(email, pass) {
-  return createResponse({status:"success", name:"Penyelaras PIMK6013 (Admin)", isAdmin:true});
-}
-
-function getLecturerStudents(email) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const dSheet = ss.getSheetByName(DATA_SHEET_NAME);
-  if (!dSheet) return createResponse({ status: "success", data: [], config: DEFAULT_CONFIG, isAdmin: true });
-
-  ensureSheetsInSync(ss);
-
-  const masterData = dSheet.getDataRange().getValues();
-  const config = getRubrikConfig();
-  const posMap = getHppPositionMap(config);
-  const mSheet = ss.getSheetByName(MARKAH_SHEET_NAME);
-
-  const markahMap = {};
-  if (mSheet) {
-    const mData = mSheet.getDataRange().getValues();
-    for (let j = 1; j < mData.length; j++) {
-      const kp = normalizeKP(mData[j][3]);
-      if (!kp) continue;
-
-      let studentScores = {};
-      config.forEach(t => {
-        t.hppList.forEach(hpp => {
-          const idx0 = posMap[hpp.id];
-          studentScores[hpp.id] = idx0 !== undefined ? (Number(mData[j][idx0]) || 0) : 0;
+        if (chartInstance) chartInstance.destroy();
+        const ctx = document.getElementById('gradeChart').getContext('2d');
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: bands.map(b => b.gred),
+                datasets: [{ label: 'Jumlah Pelajar', data: bands.map(b => b.jumlah), backgroundColor: '#0f766e' }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
         });
-      });
-
-      markahMap[kp] = {
-        scores: studentScores,
-        total: Number(mData[j][posMap.__jumlahIdx]) || 0,
-        gred: mData[j][posMap.__gredIdx] || "-",
-        just: mData[j][posMap.__justIdx] || "-",
-        penilai: mData[j][posMap.__penilaiIdx] || ""
-      };
-    }
-  }
-
-  const filtered = masterData.slice(1).map(row => {
-    let obj = {}; masterData[0].forEach((hdr,i) => { obj[hdr] = (hdr==="Link_Gambar") ? convertDriveUrl(row[i]) : row[i]; });
-    const kp = normalizeKP(obj.No_KP);
-    obj.No_KP = kp;
-    obj.markahSediaAda = markahMap[kp] || null;
-    return obj;
-  });
-
-  return createResponse({ status: "success", data: filtered, config: config, isAdmin: true });
+    } catch(e){}
 }
 
-function submitScoresWithSync(p) {
-  const lock = LockService.getScriptLock();
-  try { lock.waitLock(10000); } catch(e){}
+/* ENGIN SIMULASI SISIHAN PIAWAI (SP) CANGGIH */
+function runSPSimulation() {
+    const targetSP = parseFloat(document.getElementById('simTargetSP').value) || 5.5;
+    const maxDelta = parseFloat(document.getElementById('simMaxDelta').value) || 3.0;
+    const mode = document.getElementById('simGradeMode').value;
 
-  try {
-    const ss = SpreadsheetApp.openById(SHEET_ID);
-    ensureSheetsInSync(ss);
+    const validStudents = sData.filter(s => s.markahSediaAda && Number(s.markahSediaAda.total) > 0);
+    if (!validStudents.length) return showToast('Tiada markah pelajar tersedia untuk simulasi', 'warn');
 
-    const config = getRubrikConfig();
-    const posMap = getHppPositionMap(config);
-    let mSheet = ss.getSheetByName(MARKAH_SHEET_NAME);
-    const mData = mSheet.getDataRange().getValues();
-    const tKP = normalizeKP(p.noKP);
+    let currentScores = validStudents.map(s => Number(s.markahSediaAda.total));
+    let mean = currentScores.reduce((a,b)=>a+b, 0) / currentScores.length;
+    let variance = currentScores.reduce((a,b)=>a + Math.pow(b - mean, 2), 0) / currentScores.length;
+    let currentSP = Math.sqrt(variance);
 
-    let targetRow = -1;
-    for (let i = 1; i < mData.length; i++) {
-      if (normalizeKP(mData[i][3]) === tKP) { targetRow = i + 1; break; }
-    }
+    document.getElementById('simSPBefore').innerText = currentSP.toFixed(2);
 
-    if (targetRow > 0) {
-      let sum = 0;
-      config.forEach(t => {
-        t.hppList.forEach(hpp => {
-          let scoreVal = p.scores && p.scores[hpp.id] !== undefined ? Number(p.scores[hpp.id]) : 0;
-          scoreVal = Math.min(hpp.max, Math.max(0, scoreVal));
-          sum += scoreVal;
+    const BAND_LIMITS_60 = {
+        "A+": { min: 54.0, max: 60.0 }, "A": { min: 48.0, max: 53.9 }, "A-": { min: 45.0, max: 47.9 },
+        "B+": { min: 42.0, max: 44.9 }, "B": { min: 39.0, max: 41.9 }, "B-": { min: 36.0, max: 38.9 },
+        "C+": { min: 33.0, max: 35.9 }, "C": { min: 30.0, max: 32.9 }, "C-": { min: 24.0, max: 29.9 },
+        "D+": { min: 18.0, max: 23.9 }, "D": { min: 12.0, max: 17.9 }, "F":  { min: 0.0,  max: 11.9 }
+    };
 
-          const colIdx0 = posMap[hpp.id]; // KEDUDUKAN TEGAR (0-based), bukan carian nama
-          if (colIdx0 !== undefined) {
-            mSheet.getRange(targetRow, colIdx0 + 1).setValue(scoreVal);
-          }
+    let simResults = [];
+    let gradeChangedCount = 0;
+
+    validStudents.forEach(s => {
+        let origScore = Number(s.markahSediaAda.total);
+        let origGred = calcGred(origScore);
+        let targetScore = origScore;
+
+        let band = BAND_LIMITS_60[origGred] || { min: 0, max: 60 };
+
+        if (origScore >= mean) {
+            let possibleNew = origScore + maxDelta;
+            if (mode === 'strict') {
+                targetScore = Math.min(band.max, possibleNew);
+            } else {
+                targetScore = Math.min(60.0, possibleNew);
+            }
+        } else {
+            let possibleNew = origScore - maxDelta;
+            if (mode === 'strict') {
+                targetScore = Math.max(band.min, possibleNew);
+            } else {
+                targetScore = Math.max(0.0, possibleNew);
+            }
+        }
+
+        let newGred = calcGred(targetScore);
+        let gredStatus = (origGred === newGred) ? "Gred Kekal" : "Gred Berubah";
+        if (origGred !== newGred) gradeChangedCount++;
+
+        simResults.push({
+            nama: s.Nama_Pelajar,
+            kelas: s.Kelas,
+            origScore: origScore,
+            targetScore: Number(targetScore.toFixed(1)),
+            delta: Number((targetScore - origScore).toFixed(1)),
+            origGred: origGred,
+            newGred: newGred,
+            gredStatus: gredStatus
         });
-      });
-
-      mSheet.getRange(targetRow, posMap.__jumlahIdx + 1).setValue(sum);
-      mSheet.getRange(targetRow, posMap.__gredIdx + 1).setValue(calculateGred(sum));
-      mSheet.getRange(targetRow, posMap.__penilaiIdx + 1).setValue(p.penilai || "");
-      mSheet.getRange(targetRow, posMap.__tarikhIdx + 1).setValue(new Date());
-    }
-
-    lock.releaseLock();
-    return createResponse({status:"success"});
-  } catch(err) {
-    lock.releaseLock();
-    return createResponse({status:"error", message: err.toString()});
-  }
-}
-
-function submitRubrik(params) {
-  const lock = LockService.getScriptLock();
-  try { lock.waitLock(10000); } catch(e){}
-
-  try {
-    const ss = SpreadsheetApp.openById(SHEET_ID);
-    ensureSheetsInSync(ss);
-
-    const config = getRubrikConfig();
-    const subMap = getSubPositionMap(config);
-    let rSheet = ss.getSheetByName(RUBRIK_SHEET_NAME);
-    const rData = rSheet.getDataRange().getValues();
-    const kpStr = normalizeKP(params.noKP);
-
-    let targetRow = -1;
-    for (let i = 1; i < rData.length; i++) {
-      if (normalizeKP(rData[i][1]) === kpStr) { targetRow = i + 1; break; }
-    }
-
-    const subScores = params.data || {};
-    const hppTotals = {};
-    const totalCols = subMap.__totalWidth;
-    const rowVals = new Array(totalCols).fill("");
-    rowVals[0] = new Date();
-    rowVals[1] = "'" + kpStr;
-    rowVals[2] = params.nama || "";
-    rowVals[3] = params.kelas || "";
-
-    config.forEach(t => {
-      t.hppList.forEach(hpp => {
-        let hppSum = 0;
-        (hpp.subKriteria || []).forEach(sub => {
-          let val = Number(subScores[sub.id]) || 0;
-          val = Math.min(sub.max, Math.max(0, val));
-          hppSum += val;
-
-          const idx0 = subMap[sub.id]; // KEDUDUKAN TEGAR
-          if (idx0 !== undefined) rowVals[idx0] = val;
-        });
-        hppTotals[hpp.id] = hppSum;
-      });
     });
 
-    rowVals[subMap.__penilaiIdx] = params.penilai || "";
-    rowVals[subMap.__statusIdx]  = "Selesai";
+    let newScores = simResults.map(r => r.targetScore);
+    let newMean = newScores.reduce((a,b)=>a+b, 0) / newScores.length;
+    let newVariance = newScores.reduce((a,b)=>a + Math.pow(b - newMean, 2), 0) / newScores.length;
+    let newSP = Math.sqrt(newVariance);
 
-    if (targetRow > 0) {
-      rSheet.getRange(targetRow, 1, 1, totalCols).setValues([rowVals]);
-    } else {
-      rSheet.appendRow(rowVals);
-    }
+    document.getElementById('simSPAfter').innerText = newSP.toFixed(2);
+    document.getElementById('simGradeChangeCount').innerText = `${gradeChangedCount} Pelajar`;
+    document.getElementById('simStatsSummary').classList.remove('hidden');
 
-    lock.releaseLock();
+    document.getElementById('simTableBody').innerHTML = simResults.map((r, i) => `
+        <tr class="${r.origGred !== r.newGred ? 'bg-amber-50' : ''}">
+            <td>${i+1}</td>
+            <td class="text-left font-bold text-xs">${r.nama}</td>
+            <td>${r.kelas}</td>
+            <td class="font-mono-score font-bold">${r.origScore}</td>
+            <td class="font-mono-score font-bold text-purple-700">${r.targetScore}</td>
+            <td class="font-mono-score text-xs ${r.delta >= 0 ? 'text-teal-700' : 'text-rose-600'}">${r.delta >= 0 ? '+'+r.delta : r.delta}</td>
+            <td class="font-serif-title font-bold">${r.origGred}</td>
+            <td class="font-serif-title font-bold text-purple-800">${r.newGred}</td>
+            <td>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.origGred === r.newGred ? 'bg-teal-100 text-teal-800' : 'bg-amber-100 text-amber-800'}">
+                    ${r.gredStatus}
+                </span>
+            </td>
+        </tr>
+    `).join('');
 
-    // Auto-kira & auto-tulis ke Pemarkahan Induk (MARKAH_PELAJAR)
-    submitScoresWithSync({
-      noKP: kpStr,
-      penilai: params.penilai,
-      scores: hppTotals
-    });
-
-    return createResponse({status:"success"});
-  } catch(err) {
-    lock.releaseLock();
-    return createResponse({status:"error", message: err.toString()});
-  }
+    showToast('Simulasi Sisihan Piawai Berjaya Dijalankan.');
 }
 
-function getRubrikStatus(noKP) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const rSheet = ss.getSheetByName(RUBRIK_SHEET_NAME);
-  if (!rSheet) return createResponse({status:"success", ada:false});
-
-  const config = getRubrikConfig();
-  const subMap = getSubPositionMap(config);
-  const rData = rSheet.getDataRange().getValues();
-  const kpNorm = normalizeKP(noKP);
-
-  for (let i = 1; i < rData.length; i++) {
-    if (normalizeKP(rData[i][1]) === kpNorm) {
-      let subScores = {};
-      Object.keys(subMap).forEach(key => {
-        if (key.indexOf("__") === 0) return; // abaikan meta key seperti __penilaiIdx
-        const idx0 = subMap[key];
-        subScores[key] = Number(rData[i][idx0]) || 0;
-      });
-      return createResponse({ status:"success", ada:true, data: subScores });
-    }
-  }
-  return createResponse({status:"success", ada:false});
+function printIndividualReport() {
+    if (!curS) return;
+    const m = curS.markahSediaAda || {};
+    const tot = m.total || 0;
+    
+    document.getElementById('printArea').innerHTML = `
+        <div class="p-8 font-sans">
+            <h2 class="text-center font-bold text-xl mb-1">IPG KAMPUS DARULAMAN</h2>
+            <h3 class="text-center font-bold text-sm mb-4">DOSSIER PEMARKAHAN PIMK6013 (PENGAJIAN ILMU AKIDAH)</h3>
+            <div class="border p-4 mb-4 text-xs space-y-1">
+                <div><strong>NAMA:</strong> ${curS.Nama_Pelajar}</div>
+                <div><strong>NO. KP:</strong> ${curS.No_KP}</div>
+                <div><strong>KELAS:</strong> ${curS.Kelas}</div>
+            </div>
+            <table class="w-full border-collapse border text-xs text-center mb-6">
+                <thead>
+                    <tr class="bg-slate-100">
+                        <th class="border p-2">PEMARKAHAN PIMK6013</th>
+                        <th class="border p-2">JUMLAH (60)</th>
+                        <th class="border p-2">GRED (100%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="border p-2 text-left">Pentaksiran Berterusan PIMK6013</td>
+                        <td class="border p-2 font-bold">${tot}</td>
+                        <td class="border p-2 font-bold">${calcGred(tot)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+    window.print();
 }
 
-function getGradeSummary(email, kelas) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const mSheet = ss.getSheetByName(MARKAH_SHEET_NAME);
-  const kelasFilter = (kelas || "").toString().trim();
-
-  if (!mSheet) return createResponse({status:"success", isAdmin:true, bands:GRADE_BANDS.map(b=>({...b,jumlah:0,peratus:0})), jumlah:0});
-
-  const config = getRubrikConfig();
-  const posMap = getHppPositionMap(config);
-  const mData = mSheet.getDataRange().getValues();
-  const scores = [];
-
-  for (let i = 1; i < mData.length; i++) {
-    if (!mData[i][3]) continue;
-    const kelasVal = (mData[i][5] || "").toString().toLowerCase();
-    if (kelasFilter && kelasFilter.toLowerCase() !== "semua" && kelasVal !== kelasFilter.toLowerCase()) continue;
-
-    const total60 = Number(mData[i][posMap.__jumlahIdx]) || 0;
-    if (total60 > 0) {
-      scores.push((total60 / 60) * 100);
-    }
-  }
-
-  const n = scores.length;
-  const bandsResult = GRADE_BANDS.map(b => ({ skala:b.skala, gred:b.gred, jumlah:0, peratus:0 }));
-
-  scores.forEach(s => {
-    for (let i = 0; i < GRADE_BANDS.length; i++) {
-      if (s >= GRADE_BANDS[i].min && s < GRADE_BANDS[i].max) { bandsResult[i].jumlah++; break; }
-    }
-  });
-  bandsResult.forEach(b => { b.peratus = n > 0 ? Number(((b.jumlah / n) * 100).toFixed(2)) : 0; });
-
-  return createResponse({ status:"success", isAdmin: true, bands: bandsResult, jumlah: n });
-}
-
-function getIndividualReportData(noKP) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const kpNorm = normalizeKP(noKP);
-
-  const masterSheet = ss.getSheetByName(DATA_SHEET_NAME);
-  if (!masterSheet) return createResponse({ status: "error", message: "Helaian DATA_PELAJAR tiada." });
-
-  const masterData = masterSheet.getDataRange().getValues();
-  let profile = null;
-  for (let i = 1; i < masterData.length; i++) {
-    if (normalizeKP(masterData[i][3]) === kpNorm) {
-      profile = { nama: masterData[i][1], noKP: kpNorm, kelas: masterData[i][5], penilai: masterData[i][6], linkGambar: convertDriveUrl(masterData[i][7]) };
-      break;
-    }
-  }
-  if (!profile) return createResponse({ status: "error", message: "Pelajar tidak dikesan." });
-
-  const config = getRubrikConfig();
-  const posMap = getHppPositionMap(config);
-  let summaryMarkah = {};
-  const mSheet = ss.getSheetByName(MARKAH_SHEET_NAME);
-  if (mSheet) {
-    const mData = mSheet.getDataRange().getValues();
-    for (let j = 1; j < mData.length; j++) {
-      if (normalizeKP(mData[j][3]) === kpNorm) {
-        let tot = Number(mData[j][posMap.__jumlahIdx]) || 0;
-        summaryMarkah = { total: tot, gred: calculateGred(tot) };
-        break;
-      }
-    }
-  }
-  return createResponse({ status: "success", data: { profile, markah: summaryMarkah } });
-}
-
-function getModerationSampling(email, kelas) {
-  const ss = SpreadsheetApp.openById(SHEET_ID);
-  const mSheet = ss.getSheetByName(MARKAH_SHEET_NAME);
-  const masterSheet = ss.getSheetByName(DATA_SHEET_NAME);
-  const kelasFilter = (kelas || "").toString().trim();
-
-  if (!mSheet || !masterSheet) return createResponse({status:"success", samples:[]});
-
-  const config = getRubrikConfig();
-  const posMap = getHppPositionMap(config);
-
-  const masterData = masterSheet.getDataRange().getValues();
-  const studentMap = {};
-  for (let i = 1; i < masterData.length; i++) {
-    const kp = normalizeKP(masterData[i][3]);
-    studentMap[kp] = { nama: masterData[i][1], kelas: masterData[i][5], penilai: masterData[i][6] };
-  }
-
-  const mData = mSheet.getDataRange().getValues();
-  const allGraded = [];
-
-  for (let j = 1; j < mData.length; j++) {
-    const kp = normalizeKP(mData[j][3]);
-    if (!kp) continue;
-    const kelasVal = mData[j][5] || (studentMap[kp] ? studentMap[kp].kelas : "");
-    if (kelasFilter && kelasFilter.toLowerCase() !== "semua" && (kelasVal||"").toLowerCase() !== kelasFilter.toLowerCase()) continue;
-
-    const rawScore = Number(mData[j][posMap.__jumlahIdx]) || 0;
-    if (rawScore <= 0) continue;
-    const pctScore = (rawScore / 60) * 100;
-
-    const penilaiName = studentMap[kp] ? studentMap[kp].penilai : "Unknown";
-    allGraded.push({ kp: kp, nama: mData[j][1] || "", kelas: kelasVal, markah: rawScore, markahPct: pctScore, maxPossible: 60, gred: calculateGred(rawScore), penilai: penilaiName });
-  }
-
-  allGraded.sort((a, b) => b.markahPct - a.markahPct);
-
-  return createResponse({
-    status: "success",
-    extremesHigh: allGraded.filter(s => s.markahPct >= 90),
-    extremesLow: allGraded.filter(s => s.markahPct < 50),
-    samples: allGraded.slice(0, 13)
-  });
-}
-
-function applySimulationChanges(p) {
-  const lock = LockService.getScriptLock();
-  try { lock.waitLock(10000); } catch (e) { return createResponse({ status: "error", message: "Pelayan sibuk. Sila cuba semula." }); }
-
-  try {
-    const ss = SpreadsheetApp.openById(SHEET_ID);
-    ensureSheetsInSync(ss);
-
-    const config = getRubrikConfig();
-    const posMap = getHppPositionMap(config);
-    const mSheet = ss.getSheetByName(MARKAH_SHEET_NAME);
-    const changes = p.changes || [];
-    const mData = mSheet.getDataRange().getValues();
-    const kpMap = {};
-    for (let i = 1; i < mData.length; i++) kpMap[normalizeKP(mData[i][3])] = i + 1;
-
-    let updatedCount = 0;
-    changes.forEach(item => {
-      const rowIdx = kpMap[normalizeKP(item.noKP)];
-      if (rowIdx) {
-        mSheet.getRange(rowIdx, posMap.__jumlahIdx + 1).setValue(item.newTotal);
-        mSheet.getRange(rowIdx, posMap.__gredIdx + 1).setValue(calculateGred(item.newTotal));
-        updatedCount++;
-      }
-    });
-
-    lock.releaseLock();
-    return createResponse({ status: "success", updatedCount: updatedCount });
-  } catch (err) { lock.releaseLock(); return createResponse({ status: "error", message: err.toString() }); }
-}
+function logout() { location.reload(); }
+</script>
+</body>
+</html>
