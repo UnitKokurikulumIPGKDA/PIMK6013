@@ -3,26 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal PIMK6013 | Sistem Penilaian IPGKDA</title>
+    <title>Portal Pemarkahan PIMK6013 | Pengajian Ilmu Akidah</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
             --primary: #0f766e;    
-            --primary-hover: #166534;
+            --primary-hover: #115e59;
             --secondary: #9f1239;  
-            
-            --t1-color: #4338ca;  
-            --t2-color: #b45309; 
-            
             --bg-body: #f8fafc;    
             --bg-surface: #ffffff; 
             --bg-alt: #f1f5f9;     
-            
             --text-main: #0f172a;  
             --text-muted: #64748b; 
             --border: #e2e8f0;     
@@ -37,50 +33,39 @@
         .shell { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; }
         .academic-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 1rem; box-shadow: var(--shadow-sm); }
         
-        .btn-primary { background: var(--primary); border: 1px solid var(--primary); cursor: pointer; transition: all 0.2s ease-in-out; color: white; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: var(--shadow-sm); }
+        .btn-primary { background: var(--primary); border: 1px solid var(--primary); cursor: pointer; transition: all 0.2s ease-in-out; color: white; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: var(--shadow-sm); }
         .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
         .btn-primary:disabled { background: #94a3b8; border-color: #94a3b8; cursor: not-allowed; }
         .btn-outline { background: transparent; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
         .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: #f8fafc; }
 
-        .s-card { padding: 14px 16px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 0.75rem; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; }
+        .s-card { padding: 12px 14px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 0.75rem; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; }
         .s-card:hover { background: var(--bg-alt); border-left-color: #94a3b8; }
-        .s-card.selected { background: #eff6ff; border-left-color: var(--primary); border-color: #bfdbfe; }
+        .s-card.selected { background: #f0fdfa; border-left-color: var(--primary); border-color: #99f6e4; }
         .s-card.done { border-left-color: #10b981; }
 
         .scroll-thin::-webkit-scrollbar { width: 6px; height: 6px; }
         .scroll-thin::-webkit-scrollbar-track { background: var(--bg-alt); border-radius: 10px; }
         .scroll-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .scroll-thin::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        input[type=number], input[type=text], input[type=password], textarea, select { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-main); outline: none; transition: all 0.2s; border-radius: 0.5rem; padding: 0.75rem 1rem; }
+        input[type=number], input[type=text], input[type=password], textarea, select { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-main); outline: none; transition: all 0.2s; border-radius: 0.5rem; padding: 0.6rem 0.8rem; }
         input:focus, textarea:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1); }
-        input:disabled { background: var(--bg-alt); color: var(--text-muted); cursor: not-allowed; }
 
-        #toast { position: fixed; top: 24px; right: 24px; z-index: 9999; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        #toast { position: fixed; top: 24px; right: 24px; z-index: 9999; transform: translateX(120%); transition: transform 0.3s ease; }
         #toast.show { transform: translateX(0); }
 
-        .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; vertical-align: middle; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
         .academic-table { width: 100%; border-collapse: collapse; font-size: 12.5px; background: var(--bg-surface); }
-        .academic-table th { background: var(--bg-alt); padding: 12px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); border-bottom: 2px solid var(--border); border-top: 1px solid var(--border); }
-        .academic-table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--text-main); }
-        .academic-table tbody tr:hover { background: #f8fafc; }
+        .academic-table th { background: var(--bg-alt); padding: 10px 12px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border); }
+        .academic-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
 
-        .dim-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 6px; display: block; }
+        .dim-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 4px; display: block; }
         .fade-in { animation: fadeIn 0.3s ease forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-        .dossier-page { page-break-after: always; break-after: page; padding: 4px; }
-        .dossier-page:last-child { page-break-after: avoid; break-after: avoid; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
         @media print {
-            @page { size: A4 portrait; margin: 8mm; }
-            body.printing-mode > *:not(#printArea):not(#printIndividualArea) { display: none !important; }
-            body.printing-mode #printArea.active-print { display: block !important; }
-            body.printing-mode #printIndividualArea.active-print { display: block !important; }
-            body.printing-mode { background: white !important; }
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
         }
     </style>
 </head>
@@ -90,646 +75,746 @@
     <div class="academic-card px-5 py-4 flex items-center gap-3 text-sm font-bold shadow-lg" id="toastMsg" style="border-left: 4px solid var(--primary);"></div>
 </div>
 
-<!-- SKRIN LOG MASUK -->
 <div class="shell" id="loginScreen">
     <div class="academic-card w-full shadow-2xl p-8 sm:p-10 border-t-4" style="max-width:440px; border-top-color: var(--primary);">
-        <div class="text-center mb-8">
-            <div style="display:inline-flex; align-items:center; justify-content:center; width:90px; height:90px; margin-bottom:12px;">
-                <img src="https://lh3.googleusercontent.com/d/10kap54x0sqPu4bFZdju9P2fXKMpyMVi8" referrerpolicy="no-referrer" crossorigin="anonymous" alt="Logo IPGKDA" style="max-width:100%; max-height:100%; object-fit:contain;" onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\\'fas fa-university\\' style=\\'font-size:2.5rem; color:var(--primary);\\'></i>';">
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 mx-auto mb-3 flex items-center justify-center bg-teal-50 text-teal-700 rounded-full border border-teal-200">
+                <i class="fas fa-book-quran text-3xl"></i>
             </div>
-            <div style="font-size:10px; font-weight:800; letter-spacing:0.15em; color:var(--secondary); text-transform:uppercase; margin-bottom:8px;">
-                Institut Pendidikan Guru Kampus Darulaman
-            </div>
-            <h1 class="font-serif-title" style="font-size:1.75rem; font-weight:700; color:var(--text-main); line-height:1.2; margin-bottom:4px;">Portal Pemarkahan</h1>
-            <p style="font-size:13px; color:var(--text-muted); font-weight:500;">PIMK6013 — Pengajian Ilmu Akidah</p>
+            <div class="text-[10px] font-extrabold tracking-widest text-teal-800 uppercase mb-1">IPG Kampus Darulaman</div>
+            <h1 class="font-serif-title text-2xl font-bold text-slate-800">Portal Pemarkahan</h1>
+            <p class="text-xs text-slate-500 font-medium mt-1">PIMK6013 — Pengajian Ilmu Akidah</p>
         </div>
 
         <div class="flex flex-col gap-4 mb-6">
             <div>
-                <label class="dim-label">Emel Rasmi Pensyarah / Admin</label>
-                <input type="text" id="idIn" value="meharmadhafadz@ipgm.edu.my" class="w-full font-mono-score text-center">
+                <label class="dim-label">Emel Rasmi / Pengenal</label>
+                <input type="text" id="idIn" value="meharmadhafadz@ipgm.edu.my" class="w-full font-mono-score text-center text-sm">
             </div>
             <div>
                 <label class="dim-label">Kata Laluan</label>
-                <input type="password" id="pwIn" value="Admin@PIMK6013" class="w-full text-center">
+                <input type="password" id="pwIn" value="admin@ipgm.edu.my" class="w-full text-center text-sm">
             </div>
         </div>
 
-        <button onclick="handleAuth()" id="loginBtn" class="btn-primary w-full rounded-lg p-4 text-sm mb-3">
+        <button onclick="handleAuth()" id="loginBtn" class="btn-primary w-full rounded-lg p-3 text-xs mb-3">
             <i class="fas fa-sign-in-alt me-2"></i> Log Masuk Sistem
         </button>
-        <button onclick="bypassLogin()" class="w-full py-3 rounded-lg text-xs font-bold text-teal-800 bg-teal-50 border border-teal-200 hover:bg-teal-100">
-            <i class="fas fa-bolt me-1 text-amber-500"></i> Pintas Log Masuk (Auto-Login Admin)
+
+        <button onclick="autoLoginBypass()" class="w-full py-2.5 px-4 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2">
+            <i class="fas fa-bolt text-amber-600"></i> Pintas Log Masuk (Auto-Login Admin)
         </button>
     </div>
 </div>
 
-<!-- DASHBOARD PENSYARAH & ADMIN -->
-<div id="lecturerDash" style="display:none; min-height:100vh; flex-direction:column;">
-    <div style="background:var(--primary); color:white; padding:16px 32px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; box-shadow:var(--shadow-md);">
-        <div style="display:flex; align-items:center; gap:16px;">
-            <div style="width:40px; height:40px; background:rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px;">
-                <i class="fas fa-chalkboard-teacher"></i>
+<div id="lecturerDash" style="display:none;" class="min-h-screen flex-col">
+    <!-- Header -->
+    <div class="bg-teal-800 text-white px-8 py-4 flex items-center justify-between sticky top-0 z-50 shadow-md">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-teal-700/50 border border-teal-600 rounded-lg flex items-center justify-center text-lg">
+                <i class="fas fa-user-shield"></i>
             </div>
             <div>
-                <div style="font-size:10px; font-weight:700; letter-spacing:0.1em; color:rgba(255,255,255,0.7); text-transform:uppercase; display:flex; align-items:center; gap:8px;">
-                    <span>Penyelaras Kursus PIMK6013</span>
-                    <span id="adminBadge" style="background:#facc15; color:#78350f; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:800; letter-spacing:0.05em;"><i class="fas fa-crown me-1"></i>SUPER ADMIN</span>
-                </div>
-                <div id="lecName" class="font-serif-title" style="font-size:16px; font-weight:700;">--</div>
+                <div class="text-[10px] font-bold tracking-widest text-teal-200 uppercase">Penyelaras PIMK6013 (Admin)</div>
+                <div id="lecName" class="font-serif-title font-bold text-lg">--</div>
             </div>
         </div>
-        <button onclick="logout()" class="btn-outline px-4 py-2 rounded-lg" style="border-color:rgba(255,255,255,0.3); color:white;"><i class="fas fa-sign-out-alt me-1"></i> Keluar</button>
+        <button onclick="logout()" class="btn-outline border-teal-600 text-white hover:bg-teal-700 px-4 py-2 rounded-lg text-xs">
+            <i class="fas fa-sign-out-alt me-1"></i> Keluar
+        </button>
     </div>
 
-    <!-- Navigasi -->
-    <div style="padding:24px 32px 0; background:white; border-bottom:1px solid var(--border);">
-        <div style="display:flex; gap:10px; margin-bottom:-1px; overflow-x:auto;">
+    <!-- Navigation Bar dengan Tab "⚙️ Tetapan Kriteria HPP" -->
+    <div class="bg-white border-b border-slate-200 px-8 pt-3">
+        <div class="flex gap-2 overflow-x-auto">
             <button class="nav-btn active" onclick="showLecTab('marking')"><i class="fas fa-calculator me-1"></i> Pemarkahan Induk</button>
             <button class="nav-btn" onclick="showLecTab('rubrik')"><i class="fas fa-clipboard-list me-1"></i> Panel Rubrik</button>
+            <button class="nav-btn text-teal-800 font-extrabold" onclick="showLecTab('setup')"><i class="fas fa-sliders-h me-1"></i> ⚙️ Tetapan Kriteria HPP</button>
             <button class="nav-btn" onclick="showLecTab('summary')"><i class="fas fa-table me-1"></i> Rekod Prestasi</button>
             <button class="nav-btn" onclick="showLecTab('laporan')"><i class="fas fa-chart-pie me-1"></i> Analisis Gred</button>
-            <button class="nav-btn" onclick="showLecTab('moderasi')" style="color:#b45309;"><i class="fas fa-balance-scale me-1"></i> Moderasi 100%</button>
-            <button class="nav-btn" onclick="showLecTab('simulasi')" style="color:#7c3aed;"><i class="fas fa-flask me-1"></i> Simulasi SP</button>
+            <button class="nav-btn text-amber-800" onclick="showLecTab('moderasi')"><i class="fas fa-balance-scale me-1"></i> Moderasi LAM-PT-04-02</button>
         </div>
         <style>
-            .nav-btn { background:transparent; border:none; padding:12px 16px; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; border-bottom:3px solid transparent; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
-            .nav-btn:hover { color:var(--primary); }
+            .nav-btn { background:transparent; border:none; padding:10px 16px; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; border-bottom:3px solid transparent; cursor:pointer; white-space:nowrap; }
             .nav-btn.active { color:var(--primary); border-bottom-color:var(--primary); }
         </style>
     </div>
 
-    <div style="padding:24px 32px; display:grid; grid-template-columns:320px 1fr; gap:24px; flex:1;">
-        <!-- Senarai Pelajar Kiri -->
-        <div class="academic-card p-4" style="align-self: start; position: sticky; top: 110px; max-height: calc(100vh - 130px); display: flex; flex-direction: column;">
-            <div style="font-size:11px; font-weight:800; color:var(--text-main); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px; padding:0 4px; display:flex; justify-content:space-between; align-items:center;">
-                <span>Senarai Calon</span>
-                <span id="classInfo" class="font-mono-score" style="color:var(--primary); font-size:11px; background:var(--bg-alt); padding:2px 8px; border-radius:12px;"></span>
+    <div class="p-8 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 flex-1">
+        <!-- Student List Sidebar -->
+        <div class="academic-card p-4 sticky top-24 self-start max-h-[calc(100vh-120px)] flex flex-col">
+            <div class="text-xs font-bold uppercase tracking-wider mb-3 flex justify-between items-center text-slate-700">
+                <span>Senarai Pelajar</span>
+                <span id="studentCount" class="font-mono-score bg-slate-100 text-teal-800 text-[10px] px-2 py-0.5 rounded border">0</span>
             </div>
-            <div class="mb-3 px-1 flex flex-col gap-2">
-                <select id="classFilter" onchange="filterStudents()" class="w-full text-xs py-2 px-3 bg-slate-50 font-bold border rounded"><option value="">Semua Kelas</option></select>
-                <input type="text" id="searchStudent" placeholder="Cari nama atau KP..." class="w-full text-xs py-2 px-3 bg-slate-50 border rounded" onkeyup="filterStudents()">
+            <div class="mb-3 space-y-2">
+                <select id="classFilter" onchange="filterStudents()" class="w-full text-xs font-bold bg-slate-50 border rounded">
+                    <option value="">Semua Kelas</option>
+                </select>
+                <input type="text" id="searchStudent" placeholder="Cari nama atau KP..." class="w-full text-xs bg-slate-50 border rounded" onkeyup="filterStudents()">
             </div>
-            <div id="sList" class="scroll-thin flex-1" style="overflow-y:auto; padding-right:4px;"></div>
+            <div id="sList" class="scroll-thin flex-1 overflow-y-auto pr-1"></div>
         </div>
 
-        <div style="min-width: 0;">
-            <!-- TAB 1: MARKAH INDUK -->
+        <div class="min-w-0">
+            <!-- TAB 1: PEMARKAHAN INDUK DYNAMIC -->
             <div id="ltab-marking">
-                <div id="gradingEmpty" class="academic-card p-12 flex items-center justify-center border-dashed border-2 bg-slate-50 min-h-[500px]">
-                    <div style="text-align:center; color:var(--text-muted);">
-                        <i class="fas fa-hand-pointer text-3xl text-slate-400 mb-3"></i>
-                        <h4 class="font-serif-title text-xl font-bold text-slate-700 mb-2">Pemarkahan Induk PIMK6013 (60%)</h4>
-                        <p style="font-size:13px; max-width:300px; margin:0 auto;">Sila pilih nama pelajar dari senarai di sebelah kiri untuk mengisi atau menyemak markah.</p>
+                <div id="gradingEmpty" class="academic-card p-12 text-center border-dashed border-2 bg-slate-50 min-h-[450px] flex items-center justify-center">
+                    <div>
+                        <i class="fas fa-hand-pointer text-4xl text-slate-300 mb-3"></i>
+                        <h4 class="font-serif-title text-xl font-bold text-slate-700 mb-1">Pemarkahan Induk PIMK6013 (60%)</h4>
+                        <p class="text-xs text-slate-500 max-w-sm mx-auto">Sila pilih nama pelajar dari senarai di sebelah kiri untuk mengisi atau menyemak markah.</p>
                     </div>
                 </div>
 
                 <div id="gradingPanel" style="display:none;" class="fade-in">
-                    <div class="academic-card p-6 mb-6 flex items-center gap-5">
-                        <div style="width:70px; height:90px; border-radius:8px; overflow:hidden; background:var(--bg-alt); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-                            <img id="li" style="width:100%; height:100%; object-fit:cover; display:none;" alt="">
-                            <i id="liPh" class="fas fa-user text-3xl text-slate-300"></i>
+                    <!-- Student Header Info -->
+                    <div class="academic-card p-5 mb-6 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-teal-50 text-teal-700 border rounded-full flex items-center justify-center flex-shrink-0 text-xl font-bold">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Calon PIMK6013</div>
+                                <div id="ln" class="font-serif-title text-xl font-bold text-slate-800">--</div>
+                                <div id="lk" class="font-mono-score text-xs text-slate-500 mt-1">--</div>
+                            </div>
                         </div>
-                        <div style="flex:1;">
-                            <div style="font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:4px;">Calon Dinilai</div>
-                            <div id="ln" class="font-serif-title" style="font-size:22px; font-weight:700; color:var(--primary); line-height:1.2;">--</div>
-                            <div id="lk" class="font-mono-score" style="font-size:13px; color:var(--text-muted); margin-top:6px; display:inline-block; background:var(--bg-body); padding:2px 8px; border:1px solid var(--border); border-radius:4px;">--</div>
-                        </div>
-                        <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
-                            <button onclick="printIndividualReport()" class="btn-primary text-xs px-3 py-2 rounded-lg bg-indigo-900 border-indigo-900 flex items-center gap-2"><i class="fas fa-file-pdf"></i> Cetak Dossier</button>
-                            <div id="badge-rubrik" style="font-size:10px; font-weight:700; padding:4px 10px; border-radius:12px; border:1px solid var(--border); background:var(--bg-surface); color:var(--text-muted);"><i class="fas fa-times-circle me-1"></i> Rubrik Belum Diisi</div>
-                        </div>
+                        <button onclick="printIndividualReport()" class="btn-outline text-xs px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 border-indigo-200">
+                            <i class="fas fa-file-pdf me-1"></i> Cetak Dossier
+                        </button>
                     </div>
 
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px;">
-                        <!-- KOTAK TUGASAN 1 -->
-                        <div class="academic-card p-6" style="border-top: 4px solid var(--t1-color);">
-                            <div style="font-size:13px; font-weight:800; text-transform:uppercase; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px; display:flex; justify-content:space-between;">
-                                <span>Tugasan 1: Persembahan</span>
-                                <span class="font-mono-score bg-slate-100 px-2 py-1 rounded text-[11px] border">20 Markah</span>
-                            </div>
-                            <div class="mb-5 flex justify-between items-center">
-                                <div><label class="dim-label mb-1" style="color:var(--t1-color);">HPP2 — Kognitif</label><span class="text-[10px] text-slate-400">Maksimum HPP: 10m</span></div>
-                                <input type="number" id="h_p_hpp2" step="0.1" oninput="calc()" min="0" max="10" class="w-20 font-mono-score text-xl font-bold text-center border-indigo-200 text-indigo-700">
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <div><label class="dim-label mb-1" style="color:var(--t1-color);">HPP5 — Komunikasi</label><span class="text-[10px] text-slate-400">Maksimum HPP: 10m</span></div>
-                                <input type="number" id="h_p_hpp5" step="0.1" oninput="calc()" min="0" max="10" class="w-20 font-mono-score text-xl font-bold text-center border-indigo-200 text-indigo-700">
-                            </div>
-                        </div>
+                    <!-- Dynamic Input Cards Generated From Config -->
+                    <div id="dynamicMarkingCards" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"></div>
 
-                        <!-- KOTAK TUGASAN 2 -->
-                        <div class="academic-card p-6" style="border-top: 4px solid var(--t2-color);">
-                            <div style="font-size:13px; font-weight:800; text-transform:uppercase; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px; display:flex; justify-content:space-between;">
-                                <span>Tugasan 2: Penulisan 1600 pp</span>
-                                <span class="font-mono-score bg-slate-100 px-2 py-1 rounded text-[11px] border">40 Markah</span>
-                            </div>
-                            <div class="mb-5 flex justify-between items-center">
-                                <div><label class="dim-label mb-1" style="color:var(--t2-color);">HPP2 — Kognitif</label><span class="text-[10px] text-slate-400">Maksimum HPP: 30m</span></div>
-                                <input type="number" id="h_t_hpp2" step="0.1" oninput="calc()" min="0" max="30" class="w-20 font-mono-score text-xl font-bold text-center border-amber-200 text-amber-700">
-                            </div>
-                            <div class="mb-5 flex justify-between items-center">
-                                <div><label class="dim-label mb-1" style="color:var(--t2-color);">HPP11 — Etika Penulisan</label><span class="text-[10px] text-slate-400">Maksimum HPP: 5m</span></div>
-                                <input type="number" id="h_t_hpp11" step="0.1" oninput="calc()" min="0" max="5" class="w-20 font-mono-score text-xl font-bold text-center border-amber-200 text-amber-700">
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <div><label class="dim-label mb-1" style="color:var(--t2-color);">VBE — Keadilan</label><span class="text-[10px] text-slate-400">Maksimum HPP: 5m</span></div>
-                                <input type="number" id="h_t_vbe" step="0.1" oninput="calc()" min="0" max="5" class="w-20 font-mono-score text-xl font-bold text-center border-amber-200 text-amber-700">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="academic-card p-8 flex justify-between items-center bg-slate-900 text-white" style="border:none;">
+                    <!-- Total Score Display -->
+                    <div class="academic-card p-6 bg-slate-900 text-white flex justify-between items-center mb-6">
                         <div>
-                            <div style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;">JUMLAH PENTAKSIRAN BERTERUSAN</div>
-                            <div style="display:flex; align-items:baseline; gap:12px;">
-                                <span id="tm" class="font-mono-score" style="font-size:56px; font-weight:800; line-height:1; color:#38bdf8;">0.0</span>
-                                <span style="font-size:20px; font-weight:600; color:rgba(255,255,255,0.5);">/ 60</span>
+                            <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">Jumlah Pentaksiran Berterusan</div>
+                            <div class="flex items-baseline gap-2">
+                                <span id="totalMark" class="font-mono-score text-5xl font-extrabold text-teal-400">0.0</span>
+                                <span class="text-lg text-slate-400 font-bold">/ 60</span>
                             </div>
                         </div>
-                        <div style="text-align:right; border-left:1px solid rgba(255,255,255,0.2); padding-left:32px;">
-                            <div style="font-size:12px; color:#94a3b8; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;">GRED SKALA (SKALA 100%) <span id="tmPct" class="ms-1 font-mono-score text-[10px] bg-slate-800 px-2 py-1 rounded">0.0%</span></div>
-                            <div id="gd" class="font-serif-title" style="font-size:64px; font-weight:700; line-height:1; color:#facc15;">F</div>
+                        <div class="text-right border-l border-slate-700 pl-8">
+                            <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">Gred Abjad (Skala 100%) <span id="pctDisp" class="font-mono-score text-[10px] bg-slate-800 px-2 py-0.5 rounded text-teal-300">0.0%</span></div>
+                            <div id="gradeDisp" class="font-serif-title text-6xl font-bold text-amber-400">F</div>
                         </div>
                     </div>
 
-                    <div id="justArea" style="display:none; margin-top:20px;">
-                        <textarea id="justTxt" rows="3" placeholder="Taipkan rasional pencapaian Cemerlang A+..." class="w-full bg-white"></textarea>
-                    </div>
-
-                    <button onclick="saveManualScores()" id="saveManualBtn" class="btn-primary w-full py-4 rounded-lg text-[14px] mt-6"><i class="fas fa-save me-2"></i> SIMPAN PEMARKAHAN PIMK6013</button>
+                    <button onclick="saveManual()" id="btnSaveManual" class="btn-primary w-full py-3.5 rounded-lg text-xs">
+                        <i class="fas fa-save me-2"></i> Simpan Pemarkahan PIMK6013
+                    </button>
                 </div>
             </div>
 
             <!-- TAB 2: PANEL RUBRIK -->
             <div id="ltab-rubrik" style="display:none;">
-                <div id="rubrikLecEmpty" class="academic-card p-12 flex items-center justify-center border-dashed border-2 bg-slate-50 min-h-[500px]">
-                    <div style="text-align:center; color:var(--text-muted);">
-                        <i class="fas fa-clipboard-list text-3xl text-slate-400 mb-3"></i>
-                        <h4 class="font-serif-title text-xl font-bold text-slate-700 mb-2">Borang Rubrik PIMK6013</h4>
-                        <p style="font-size:13px;">Sila pilih pelajar dari senarai di sebelah kiri.</p>
+                <div id="rubrikEmpty" class="academic-card p-12 text-center border-dashed border-2 bg-slate-50 min-h-[450px] flex items-center justify-center">
+                    <div class="text-slate-400">
+                        <i class="fas fa-clipboard-list text-4xl mb-3"></i>
+                        <h4 class="font-serif-title text-xl font-bold text-slate-700 mb-1">Borang Rubrik PIMK6013</h4>
+                        <p class="text-xs">Sila pilih pelajar dari senarai di sebelah kiri untuk mengisi atau mengesahkan rubrik.</p>
                     </div>
                 </div>
-                
-                <div id="rubrikLecPanel" style="display:none;" class="fade-in">
-                    <div class="academic-card p-6 mb-6 flex justify-between items-center bg-white border-l-4" style="border-left-color: var(--secondary);">
-                        <div>
-                            <div class="dim-label mb-1">Instrumen Rubrik</div>
-                            <div id="rubrikLecStudentName" class="font-serif-title text-2xl font-bold text-slate-800">--</div>
-                            <div id="rubrikLecStudentKP" class="font-mono-score text-sm text-slate-500 mt-1">--</div>
-                        </div>
-                        <div id="rubrikLecExistBadge" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0; color:#15803d; padding:8px 16px; border-radius:8px; font-weight:700; font-size:12px;"><i class="fas fa-lock me-2"></i> Rekod Tersimpan</div>
-                    </div>
 
-                    <div id="lecRubrikContainer" class="space-y-6"></div>
-
-                    <button onclick="saveRubrik()" id="saveRubrikBtn" class="btn-primary w-full py-4 rounded-lg text-[14px] mt-6"><i class="fas fa-check-double me-2"></i> SAHKAN & SIMPAN RUBRIK</button>
+                <div id="rubrikPanel" style="display:none;" class="academic-card p-6 fade-in">
+                    <h2 class="font-serif-title text-xl font-bold text-slate-800 mb-4 border-b pb-3">
+                        Instrumen Rubrik: <span id="r_nama" class="text-teal-700">--</span>
+                    </h2>
+                    <div id="rubrikContainer" class="space-y-6"></div>
+                    <button onclick="saveRubrik()" id="btnSaveRubrik" class="btn-primary w-full py-3.5 rounded-lg text-xs mt-6">
+                        <i class="fas fa-check-circle me-2"></i> Sahkan &amp; Simpan Rubrik (Autokira ke Pemarkahan Induk)
+                    </button>
                 </div>
             </div>
 
-            <!-- TAB 3: REKOD PRESTASI / SUMMARY -->
+            <!-- TAB 3: TETAPAN KRITERIA HPP (ADMIN PANEL) -->
+            <div id="ltab-setup" style="display:none;">
+                <div class="academic-card p-6">
+                    <div class="flex justify-between items-center mb-4 border-b pb-3">
+                        <div>
+                            <h3 class="font-serif-title text-xl font-bold text-slate-800">⚙️ Tetapan Kriteria HPP &amp; Sub-Kriteria PIMK6013</h3>
+                            <p class="text-xs text-slate-500 mt-1">Tentukan Tugasan, HPP/HPK, dan Sub-Kriteria (contoh: Pendahuluan 5%, Penutup 5% $\rightarrow$ HPP2 = 10%). Sistem akan menjana semula Header pada Google Sheet secara automatik.</p>
+                        </div>
+                        <button onclick="addTugasanBlock()" class="btn-outline px-3 py-1.5 bg-teal-50 text-teal-700 border-teal-200">
+                            <i class="fas fa-plus me-1"></i> Tambah Tugasan Baharu
+                        </button>
+                    </div>
+
+                    <div id="configEditorContainer" class="space-y-6"></div>
+
+                    <div class="mt-6 pt-4 border-t flex justify-end gap-3">
+                        <button onclick="loadConfigUI()" class="btn-outline px-4 py-2">Batal / Reset</button>
+                        <button onclick="saveConfigToServer()" id="btnSaveConfig" class="btn-primary px-6 py-2 rounded-lg text-xs">
+                            <i class="fas fa-cog me-2"></i> Simpan &amp; Jana Header Google Sheet
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: REKOD PRESTASI -->
             <div id="ltab-summary" style="display:none;">
                 <div class="academic-card p-6">
-                    <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
-                        <div>
-                            <h3 class="font-serif-title text-xl font-bold text-slate-800">Rekod Prestasi Keseluruhan</h3>
-                            <p class="text-xs text-slate-500 mt-1">Gunakan penapis dan susunan di bawah untuk menyusun senarai markah.</p>
-                        </div>
-                        <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                            <select id="summaryClassFilter" onchange="renderSummaryTable()" class="text-xs py-2 px-3 bg-slate-50 font-bold border rounded-lg"><option value="">Semua Kelas</option></select>
-                            <select id="summarySortBy" onchange="renderSummaryTable()" class="text-xs py-2 px-3 bg-slate-50 font-bold border rounded-lg">
-                                <option value="nama_asc">Nama (A-Z)</option>
-                                <option value="kelas_asc">Kelas (A-Z)</option>
-                                <option value="score_desc">Markah (Tinggi ke Rendah)</option>
-                                <option value="score_asc">Markah (Rendah ke Tinggi)</option>
-                            </select>
-                            <input type="text" id="summarySearchName" placeholder="Cari nama..." class="text-xs py-2 px-3 bg-slate-50 border rounded-lg" onkeyup="renderSummaryTable()">
-                        </div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-serif-title text-xl font-bold text-slate-800">Buku Rekod Pemarkahan PIMK6013</h3>
+                        <button onclick="loadSummary()" class="btn-outline px-3 py-1.5"><i class="fas fa-sync me-1"></i> Segarkan</button>
                     </div>
-                    
-                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <div class="overflow-x-auto border rounded-lg">
                         <table class="academic-table text-center" id="summaryTable">
-                            <thead>
-                                <tr>
-                                    <th class="text-left">Nama Calon</th>
-                                    <th class="text-center" style="color:var(--t1-color);">T1_HPP2 (10)</th>
-                                    <th class="text-center" style="color:var(--t1-color);">T1_HPP5 (10)</th>
-                                    <th class="text-center" style="color:var(--t2-color);">T2_HPP2 (30)</th>
-                                    <th class="text-center" style="color:var(--t2-color);">T2_HPP11 (5)</th>
-                                    <th class="text-center" style="color:var(--t2-color);">T2_VBE (5)</th>
-                                    <th class="text-center bg-slate-200 text-slate-800">JUMLAH (60)</th>
-                                    <th class="text-center bg-slate-200 text-slate-800">GRED</th>
-                                    <th class="text-center">Tindakan</th>
-                                </tr>
-                            </thead>
+                            <thead id="summaryHeader"></thead>
                             <tbody id="summaryBody"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- TAB 4: ANALISIS GRED -->
+            <!-- TAB 5: ANALISIS GRED -->
             <div id="ltab-laporan" style="display:none;">
-                <div class="academic-card p-6 mb-6 flex justify-between items-center bg-white border-l-4" style="border-left-color: var(--secondary);">
-                    <div><h3 class="font-serif-title text-xl font-bold text-slate-800">Analisis Taburan Gred (Peratusan 100%)</h3></div>
-                    <div class="flex items-center gap-2">
-                        <select id="laporanClassFilter" onchange="loadGradeSummary()" class="text-xs py-2 px-3 bg-slate-50 border rounded-lg"><option value="">Semua Kelas</option></select>
-                        <button onclick="window.print()" class="btn-primary px-4 py-2 rounded-lg text-[11px]"><i class="fas fa-print me-2"></i> Cetak Laporan</button>
-                    </div>
-                </div>
-
-                <div style="display:grid; grid-template-columns:340px 1fr; gap:24px; align-items:start;">
-                    <div class="academic-card p-4 overflow-hidden">
-                        <table class="academic-table text-center" id="gradeSummaryTable">
-                            <thead><tr><th>Skala</th><th>Gred</th><th>Jumlah</th><th>%</th></tr></thead>
-                            <tbody id="gradeSummaryBody"></tbody>
-                            <tfoot>
-                                <tr style="background:var(--bg-alt); font-weight:800;">
-                                    <td colspan="2" class="p-3 text-[11px] uppercase">Jumlah</td>
-                                    <td class="p-3 font-mono-score" id="gradeSummaryTotal">0</td><td class="p-3 font-mono-score">100</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                    <div class="flex flex-col gap-6">
-                        <div class="academic-card p-6"><div style="position:relative; width:100%; height:340px;"><canvas id="gradeBarChart"></canvas></div></div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                            <div class="academic-card p-6 text-center" style="border-top:4px solid var(--primary);"><div class="dim-label mb-2">MIN (%)</div><div id="gradeMinVal" class="font-mono-score text-3xl font-bold text-teal-700">--</div></div>
-                            <div class="academic-card p-6 text-center" style="border-top:4px solid var(--secondary);"><div class="dim-label mb-2">Sisihan Piawai</div><div id="gradeSDVal" class="font-mono-score text-3xl font-bold text-rose-700">--</div></div>
+                <div class="academic-card p-6">
+                    <h3 class="font-serif-title text-xl font-bold text-slate-800 mb-4">Analisis Taburan Gred PIMK6013</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                        <div>
+                            <table class="academic-table text-center">
+                                <thead><tr><th>Skala (100%)</th><th>Gred</th><th>Jumlah</th><th>%</th></tr></thead>
+                                <tbody id="gradeSummaryBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="gradeChart"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- TAB 5: MODERASI LAM-PT-04-02 -->
+            <!-- TAB 6: MODERASI LAM-PT-04-02 -->
             <div id="ltab-moderasi" style="display:none;">
-                <div class="academic-card p-6 mb-6">
-                    <h3 class="font-serif-title text-xl font-bold text-slate-800">Modul Moderasi 100% LAM-PT-04-02</h3>
-                    <p class="text-xs text-slate-500 mb-4">Sistem menukar markah 60 secara automatik ke peratusan bagi pemilihan sampel yang tepat.</p>
-                    <button onclick="loadModerationSampling()" class="btn-outline px-4 py-2"><i class="fas fa-sync me-1"></i> Semak Sampel Terkini</button>
-                </div>
                 <div class="academic-card p-6">
-                    <h4 class="text-xs font-bold text-blue-900 mb-4 uppercase">Senarai 13 Sampel (Penguncian Per Pemeriksa)</h4>
-                    <table class="academic-table">
-                        <thead><tr><th>Bil</th><th>Pemeriksa</th><th>Nama Calon (Sampel)</th><th>Markah (60)</th><th>% (100)</th><th>Gred</th><th>Status Kelompok</th></tr></thead>
-                        <tbody id="modSamplesBody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- TAB 6: SIMULASI SP -->
-            <div id="ltab-simulasi" style="display:none;">
-                <div class="academic-card p-6">
-                    <h3 class="font-serif-title text-xl font-bold text-slate-800 mb-2">Alat Simulasi Sisihan Piawai PIMK6013</h3>
-                    <div class="flex gap-4 items-end mb-6">
-                        <div><label class="dim-label">Sasaran SP</label><input type="number" id="simTargetSP" value="5.0" step="0.1" class="w-24 font-bold"></div>
-                        <div><label class="dim-label">Max Delta</label><input type="number" id="simMaxDelta" value="3.0" step="0.1" class="w-24 font-bold"></div>
-                        <button onclick="janaCadanganPintar()" class="btn-primary px-4 py-2 rounded">Jana Simulasi</button>
+                    <h3 class="font-serif-title text-xl font-bold text-slate-800 mb-2">Modul Moderasi LAM-PT-04-02 (PIMK6013)</h3>
+                    <p class="text-xs text-slate-500 mb-4">Sistem menukar markah 60m secara automatik ke skala peratusan (100%) untuk persampelan 13 skrip terlaras.</p>
+                    <button onclick="loadModeration()" class="btn-outline px-3 py-1.5 mb-4"><i class="fas fa-sync me-1"></i> Segarkan Sampel Moderasi</button>
+                    <div class="overflow-x-auto border rounded-lg">
+                        <table class="academic-table text-center">
+                            <thead><tr><th>Bil</th><th>Nama Pelajar</th><th>Kelas</th><th>Markah Mentah (60)</th><th>% (100)</th><th>Gred</th></tr></thead>
+                            <tbody id="moderationBody"></tbody>
+                        </table>
                     </div>
-                    <div class="overflow-x-auto"><table class="academic-table"><thead><tr><th>Nama</th><th>Asal (60)</th><th>Target (60)</th><th>Gred Sama</th></tr></thead><tbody id="simSuggestBody"></tbody></table></div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 
-<div id="printArea" style="display:none;"></div>
-<div id="printIndividualArea" style="display:none;"></div>
+<div id="printArea"></div>
 
 <script>
-// API deployment URL
 const API = "https://script.google.com/macros/s/AKfycbyDpo-j5WCmOSA-TCLgMzTpjxFBFfU8m5DSG4-qNeFo5BAyadH1v6ejN-9C4hhygpqA/exec";
 
-let curLec = 'meharmadhafadz@ipgm.edu.my', sData = [], curS = null;
+let curLec = "meharmadhafadz@ipgm.edu.my";
+let sData = [], curS = null, chartInstance = null;
+let currentConfig = [];
 
-const RUBRIK_CFG = [
-    {
-        id:'t1', title:'TUGASAN 1: Persembahan (20%)', color:'#0f766e', prefix:'p',
-        items: [
-            {n:"HPP2: Kognitif", d:"Kejelasan idea dan penyampaian kandungan (10m)", max:10, key:'p_hpp2'},
-            {n:"HPP5: Komunikasi", d:"Penyampaian lisan yang lancar dan yakin (10m)", max:10, key:'p_hpp5'}
-        ]
-    },
-    {
-        id:'t2', title:'TUGASAN 2: Penulisan 1600 pp (40%)', color:'#b45309', prefix:'t',
-        items: [
-            {n:"HPP2: Kognitif", d:"Analisis kritis, hujah bernas dan sintesis idea (30m)", max:30, key:'t_hpp2'},
-            {n:"HPP11: Etika Penulisan", d:"Pematuhan gaya rujukan dan integriti (5m)", max:5, key:'t_hpp11'},
-            {n:"VBE: Keadilan", d:"Penonjolan nilai keadilan (5m)", max:5, key:'t_vbe'}
-        ]
-    }
-];
-
-function toast(msg, type='success') {
+function showToast(msg, type='success') {
     const t = document.getElementById('toast'), m = document.getElementById('toastMsg');
     if (!t || !m) return;
-    const safeMsg = (msg !== undefined && msg !== null && msg !== "") ? msg : (type === 'success' ? 'Operasi berjaya' : 'Ralat berlaku');
-    m.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle text-green-600':'fa-exclamation-triangle text-amber-600'}"></i> ${safeMsg}`;
-    t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 3000);
+    const cleanMsg = (msg && msg !== "undefined") ? msg : "Tindakan berjaya dilaksanakan.";
+    m.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle text-teal-600':'fa-exclamation-triangle text-amber-600'}"></i> <span>${cleanMsg}</span>`;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-function calcGred(mark60) {
-    let pct = (mark60/60)*100;
-    if(pct>=90) return "A+"; if(pct>=80) return "A"; if(pct>=75) return "A-"; if(pct>=70) return "B+";
-    if(pct>=65) return "B"; if(pct>=60) return "B-"; if(pct>=55) return "C+"; if(pct>=50) return "C";
-    if(pct>=40) return "C-"; if(pct>=30) return "D+"; if(pct>=20) return "D"; return "F";
+function calcGred(total60) {
+    let pct = (total60 / 60) * 100;
+    if (pct >= 90) return "A+"; if (pct >= 80) return "A"; if (pct >= 75) return "A-"; if (pct >= 70) return "B+";
+    if (pct >= 65) return "B";  if (pct >= 60) return "B-"; if (pct >= 55) return "C+"; if (pct >= 50) return "C";
+    if (pct >= 40) return "C-"; if (pct >= 30) return "D+"; if (pct >= 20) return "D";  return "F";
 }
 
-function bypassLogin() {
+function autoLoginBypass() {
     curLec = "meharmadhafadz@ipgm.edu.my";
+    document.getElementById('lecName').innerText = "Penyelaras PIMK6013 (Admin)";
     initLec();
 }
 
 async function handleAuth() {
-    const id = document.getElementById('idIn').value.trim();
-    if (!id) return toast('Sila masukkan emel', 'warn');
+    const id = document.getElementById('idIn').value;
+    if (!id) return showToast('Sila masukkan emel', 'warn');
     curLec = id;
+    document.getElementById('lecName').innerText = "Penyelaras PIMK6013 (Admin)";
     initLec();
 }
 
 async function initLec() {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('lecturerDash').style.display = 'flex';
-    document.getElementById('lecName').innerText = curLec;
-    
     try {
         const r = await fetch(`${API}?action=getLecturerStudents&email=${encodeURIComponent(curLec)}`);
         const o = await r.json();
         sData = o.data || [];
+        currentConfig = o.config || [];
         
-        // Populate class filters
-        const classes = [...new Set(sData.map(s => s.Kelas))].filter(Boolean).sort();
-        ['classFilter','summaryClassFilter','laporanClassFilter'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.innerHTML = '<option value="">Semua Kelas</option>' + classes.map(c => `<option value="${c}">${c}</option>`).join('');
-            }
-        });
-        
-        filterStudents();
-        renderSummaryTable();
+        const classes = [...new Set(sData.map(s => s.Kelas))].filter(Boolean);
+        const cf = document.getElementById('classFilter');
+        if (cf) cf.innerHTML = '<option value="">Semua Kelas</option>' + classes.map(c => `<option value="${c}">${c}</option>`).join('');
+
+        renderList();
+        renderDynamicGradingCards();
+        loadConfigUI();
+        loadSummary();
         loadGradeSummary();
+        showToast('Data PIMK6013 & Tetapan Rubrik Berjaya Dimuat Turun.');
     } catch(e) {
-        toast('Sistem dimuatkan dalam mod responsif', 'success');
+        showToast('Gagal memuat turun data pelajar.', 'warn');
     }
 }
 
-function filterStudents() {
-    const q = (document.getElementById('searchStudent')?.value || '').toLowerCase();
-    const c = document.getElementById('classFilter')?.value || '';
-    const lst = sData.filter(s => 
-        (s.Nama_Pelajar.toLowerCase().includes(q) || s.No_KP.includes(q)) && 
-        (!c || s.Kelas === c)
-    );
+function renderList() {
+    const q = document.getElementById('searchStudent').value.toLowerCase();
+    const c = document.getElementById('classFilter').value;
+    const filtered = sData.filter(s => (s.Nama_Pelajar.toLowerCase().includes(q) || s.No_KP.includes(q)) && (!c || s.Kelas === c));
     
-    document.getElementById('sList').innerHTML = lst.map(s => `
-        <div class="s-card ${s.markahSediaAda?'done':''}" onclick="selStud('${s.No_KP}')">
-            <div class="font-bold text-xs">${s.Nama_Pelajar}</div>
-            <div class="text-[10px] text-slate-500">${s.Kelas} • ${s.No_KP}</div>
+    document.getElementById('studentCount').innerText = filtered.length;
+    document.getElementById('sList').innerHTML = filtered.map(s => `
+        <div class="s-card ${s.markahSediaAda?'done':''}" onclick="selStud('${s.No_KP}')" data-kp="${s.No_KP}">
+            <div class="font-bold text-xs text-slate-800">${s.Nama_Pelajar}</div>
+            <div class="text-[10px] text-slate-500 font-mono-score mt-0.5">${s.Kelas} • ${s.No_KP}</div>
         </div>
-    `).join('') || '<div class="p-4 text-xs text-slate-400 text-center">Tiada pelajar dijumpai</div>';
+    `).join('') || `<div class="text-center p-4 text-xs text-slate-400">Tiada pelajar.</div>`;
 }
 
-function showLecTab(tab) {
-    ['marking','rubrik','summary','laporan','moderasi','simulasi'].forEach(t => {
-        const el = document.getElementById('ltab-' + t);
-        if (el) el.style.display = 'none';
-    });
-    const target = document.getElementById('ltab-' + tab);
-    if (target) target.style.display = 'block';
-    
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    if (event && event.currentTarget) event.currentTarget.classList.add('active');
+function filterStudents() { renderList(); }
+
+/* RENDER CARDS PEMARKAHAN BERDASARKAN CONFIG */
+function renderDynamicGradingCards() {
+    const container = document.getElementById('dynamicMarkingCards');
+    if (!container) return;
+
+    container.innerHTML = currentConfig.map((t) => {
+        let tMax = t.hppList.reduce((sum, h) => sum + Number(h.max), 0);
+        let inputs = t.hppList.map(hpp => `
+            <div class="mb-3 flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100">
+                <div>
+                    <label class="dim-label mb-0 text-teal-800">${hpp.name}</label>
+                    <span class="text-[10px] text-slate-400">Maksimum HPP: ${hpp.max}m</span>
+                </div>
+                <input type="number" id="inp_${hpp.id}" min="0" max="${hpp.max}" step="0.1" oninput="calc()" class="w-20 font-mono-score text-center font-bold text-lg border-teal-200 text-teal-700 bg-white">
+            </div>
+        `).join('');
+
+        return `
+            <div class="academic-card p-5 border-t-4" style="border-top-color: var(--primary);">
+                <div class="text-xs font-bold uppercase mb-4 pb-2 border-b flex justify-between">
+                    <span>${t.tugasan}</span>
+                    <span class="font-mono-score bg-slate-100 px-2 py-0.5 rounded border text-[10px]">${tMax}%</span>
+                </div>
+                ${inputs}
+            </div>
+        `;
+    }).join('');
 }
 
 function selStud(kp) {
     curS = sData.find(s => s.No_KP == kp);
     if (!curS) return;
 
-    document.getElementById('ln').innerText = curS.Nama_Pelajar; 
-    document.getElementById('lk').innerText = curS.No_KP;
-    document.getElementById('gradingEmpty').style.display = 'none'; 
+    document.querySelectorAll('.s-card').forEach(el => el.classList.remove('selected'));
+    const selEl = document.querySelector(`.s-card[data-kp="${kp}"]`);
+    if (selEl) selEl.classList.add('selected');
+
+    document.getElementById('ln').innerText = curS.Nama_Pelajar;
+    document.getElementById('lk').innerText = `ID: ${curS.No_KP} | Kelas: ${curS.Kelas}`;
+    document.getElementById('gradingEmpty').style.display = 'none';
     document.getElementById('gradingPanel').style.display = 'block';
-    
-    if (curS.markahSediaAda) {
-        document.getElementById('h_p_hpp2').value = curS.markahSediaAda.p_hpp2 || 0;
-        document.getElementById('h_p_hpp5').value = curS.markahSediaAda.p_hpp5 || 0;
-        document.getElementById('h_t_hpp2').value = curS.markahSediaAda.t_hpp2 || 0;
-        document.getElementById('h_t_hpp11').value = curS.markahSediaAda.t_hpp11 || 0;
-        document.getElementById('h_t_vbe').value = curS.markahSediaAda.t_vbe || 0;
-    } else {
-        ['h_p_hpp2','h_p_hpp5','h_t_hpp2','h_t_hpp11','h_t_vbe'].forEach(id => document.getElementById(id).value = '');
-    }
-    calc(); 
+
+    const scores = curS.markahSediaAda ? (curS.markahSediaAda.scores || {}) : {};
+    currentConfig.forEach(t => {
+        t.hppList.forEach(hpp => {
+            const el = document.getElementById(`inp_${hpp.id}`);
+            if (el) el.value = scores[hpp.id] !== undefined ? scores[hpp.id] : '';
+        });
+    });
+
+    calc();
     renderRubrikUI();
 }
 
 function calc() {
-    const v1 = Number(document.getElementById('h_p_hpp2')?.value) || 0;
-    const v2 = Number(document.getElementById('h_p_hpp5')?.value) || 0;
-    const v3 = Number(document.getElementById('h_t_hpp2')?.value) || 0;
-    const v4 = Number(document.getElementById('h_t_hpp11')?.value) || 0;
-    const v5 = Number(document.getElementById('h_t_vbe')?.value) || 0;
-    
-    const tot = v1 + v2 + v3 + v4 + v5;
-    document.getElementById('tm').innerText = tot.toFixed(1);
-    document.getElementById('tmPct').innerText = ((tot/60)*100).toFixed(1) + '%';
-    document.getElementById('gd').innerText = calcGred(tot);
+    let tot = 0;
+    currentConfig.forEach(t => {
+        t.hppList.forEach(hpp => {
+            const el = document.getElementById(`inp_${hpp.id}`);
+            if (el) tot += Number(el.value) || 0;
+        });
+    });
 
-    if (curS) {
-        if (!curS.markahSediaAda) curS.markahSediaAda = {};
-        curS.markahSediaAda.p_hpp2 = v1;
-        curS.markahSediaAda.p_hpp5 = v2;
-        curS.markahSediaAda.t_hpp2 = v3;
-        curS.markahSediaAda.t_hpp11 = v4;
-        curS.markahSediaAda.t_vbe = v5;
-        curS.markahSediaAda.total = tot;
-    }
+    document.getElementById('totalMark').innerText = tot.toFixed(1);
+    document.getElementById('pctDisp').innerText = ((tot / 60) * 100).toFixed(1) + '%';
+    document.getElementById('gradeDisp').innerText = calcGred(tot);
 }
 
-async function saveManualScores() {
+async function saveManual() {
     if (!curS) return;
-    const btn = document.getElementById('saveManualBtn'); 
+    const btn = document.getElementById('btnSaveManual');
     btn.disabled = true;
-    try {
-        await fetch(API, {
-            method: 'POST', 
-            mode: 'no-cors', 
-            body: JSON.stringify({
-                action: 'submitScores', 
-                noKP: curS.No_KP, 
-                penilai: curLec,
-                p_hpp2: document.getElementById('h_p_hpp2').value, 
-                p_hpp5: document.getElementById('h_p_hpp5').value,
-                t_hpp2: document.getElementById('h_t_hpp2').value, 
-                t_hpp11: document.getElementById('h_t_hpp11').value,
-                t_vbe: document.getElementById('h_t_vbe').value
-            })
+
+    const payload = { action: 'submitScores', noKP: curS.No_KP, penilai: curLec, scores: {} };
+    currentConfig.forEach(t => {
+        t.hppList.forEach(hpp => {
+            const el = document.getElementById(`inp_${hpp.id}`);
+            payload.scores[hpp.id] = el ? el.value : 0;
         });
-        toast('Markah PIMK6013 Berjaya Disimpan');
+    });
+
+    try {
+        await fetch(API, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        showToast('Markah PIMK6013 Berjaya Disimpan');
+        setTimeout(initLec, 1200);
     } catch(e) {
-        toast('Markah Disimpan secara tempatan');
+        showToast('Ralat menyimpan markah.', 'warn');
     }
     btn.disabled = false;
 }
 
-function renderRubrikUI() {
-    document.getElementById('rubrikLecEmpty').style.display = 'none'; 
-    document.getElementById('rubrikLecPanel').style.display = 'block';
-    document.getElementById('rubrikLecStudentName').innerText = curS.Nama_Pelajar;
-    
-    const m = curS.markahSediaAda || {};
+/* RENDER BUKU PENILAIAN RUBRIK BERPERINGKAT (SUB-KRITERIA -> HPP) */
+async function renderRubrikUI() {
+    document.getElementById('rubrikEmpty').style.display = 'none';
+    document.getElementById('rubrikPanel').style.display = 'block';
+    document.getElementById('r_nama').innerText = curS.Nama_Pelajar;
 
-    document.getElementById('lecRubrikContainer').innerHTML = RUBRIK_CFG.map(c => `
-        <div class="mb-6 border rounded-lg p-4 border-l-4 bg-white" style="border-left-color:${c.color}">
-            <h3 class="font-bold text-sm mb-3" style="color:${c.color}">${c.title}</h3>
-            ${c.items.map(it => `
-                <div class="flex justify-between items-center mb-3 bg-slate-50 p-3 rounded border">
-                    <div>
-                        <div class="text-xs font-bold text-slate-800">${it.n}</div>
-                        <div class="text-[11px] text-slate-500">${it.d}</div>
+    let existingSubScores = {};
+    try {
+        const r = await fetch(`${API}?action=getRubrikStatus&noKP=${curS.No_KP}`);
+        const o = await r.json();
+        if (o.status === "success" && o.ada) {
+            existingSubScores = o.data || {};
+        }
+    } catch(e) {}
+
+    document.getElementById('rubrikContainer').innerHTML = currentConfig.map(t => `
+        <div class="academic-card p-5 border-l-4 border-teal-700 bg-white">
+            <h4 class="font-bold text-sm text-teal-900 mb-4 pb-2 border-b flex justify-between">
+                <span>${t.tugasan}</span>
+            </h4>
+            <div class="space-y-5">
+                ${t.hppList.map(hpp => {
+                    let subInputs = (hpp.subKriteria || []).map(sub => `
+                        <div class="flex justify-between items-center bg-slate-50 p-2.5 rounded border border-slate-200">
+                            <div>
+                                <div class="text-xs font-bold text-slate-800">${sub.name}</div>
+                                <div class="text-[10px] text-slate-500">${sub.desc}</div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="r_sub_${sub.id}" data-hpp="${hpp.id}" data-max="${sub.max}" value="${existingSubScores[sub.id] !== undefined ? existingSubScores[sub.id] : ''}" max="${sub.max}" min="0" step="0.1" oninput="calcRubrikHPP('${hpp.id}')" class="w-16 text-center font-bold text-xs bg-white border-teal-300">
+                                <span class="text-[10px] font-bold text-slate-400">/${sub.max}m</span>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    return `
+                        <div class="p-3 bg-teal-50/40 rounded-lg border border-teal-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <div class="font-bold text-xs text-teal-900">${hpp.name}</div>
+                                <div class="text-xs font-mono-score font-bold bg-white px-2 py-0.5 rounded border border-teal-200 text-teal-800">
+                                    Jumlah HPP: <span id="r_hpp_total_${hpp.id}">0.0</span> / ${hpp.max}m
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                ${subInputs}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `).join('');
+
+    currentConfig.forEach(t => {
+        t.hppList.forEach(hpp => calcRubrikHPP(hpp.id));
+    });
+}
+
+function calcRubrikHPP(hppId) {
+    let sum = 0;
+    const inputs = document.querySelectorAll(`input[data-hpp="${hppId}"]`);
+    inputs.forEach(inp => {
+        sum += Number(inp.value) || 0;
+    });
+    const totalEl = document.getElementById(`r_hpp_total_${hppId}`);
+    if (totalEl) totalEl.innerText = sum.toFixed(1);
+}
+
+async function saveRubrik() {
+    const btn = document.getElementById('btnSaveRubrik');
+    btn.disabled = true;
+
+    const payload = {
+        action: 'submitRubrik',
+        noKP: curS.No_KP,
+        nama: curS.Nama_Pelajar,
+        kelas: curS.Kelas,
+        penilai: curLec,
+        data: {}
+    };
+
+    currentConfig.forEach(t => {
+        t.hppList.forEach(hpp => {
+            (hpp.subKriteria || []).forEach(sub => {
+                const el = document.getElementById(`r_sub_${sub.id}`);
+                payload.data[sub.id] = el ? el.value : 0;
+            });
+        });
+    });
+
+    try {
+        await fetch(API, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        showToast('Rubrik PIMK6013 Disahkan & Markah Induk Dikemas kini!');
+        setTimeout(initLec, 1200);
+    } catch(e) {
+        showToast('Ralat menyimpan rubrik.', 'warn');
+    }
+    btn.disabled = false;
+}
+
+function loadConfigUI() {
+    const container = document.getElementById('configEditorContainer');
+    if (!container) return;
+
+    container.innerHTML = currentConfig.map((t, tIdx) => `
+        <div class="academic-card p-5 bg-slate-50 border border-slate-200">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b">
+                <input type="text" value="${t.tugasan}" onchange="currentConfig[${tIdx}].tugasan = this.value" class="font-bold text-sm bg-white border px-2 py-1 w-2/3">
+                <button onclick="removeTugasanBlock(${tIdx})" class="text-rose-600 text-xs font-bold hover:underline"><i class="fas fa-trash me-1"></i> Padam Tugasan</button>
+            </div>
+            
+            <div class="space-y-4 mb-4">
+                ${t.hppList.map((hpp, hIdx) => `
+                    <div class="bg-white p-3 rounded border border-teal-200">
+                        <div class="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
+                            <input type="text" value="${hpp.id}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].id = this.value" placeholder="Kod HPP" class="w-24 text-xs font-mono-score font-bold">
+                            <input type="text" value="${hpp.name}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].name = this.value" placeholder="Nama HPP" class="flex-1 text-xs font-bold text-teal-800">
+                            <span class="text-xs font-bold text-slate-500">Jumlah HPP (Max):</span>
+                            <input type="number" value="${hpp.max}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].max = Number(this.value)" placeholder="Max" class="w-16 text-xs text-center font-bold">
+                            <button onclick="removeHPPItem(${tIdx}, ${hIdx})" class="text-rose-500 text-xs px-2"><i class="fas fa-trash"></i> Padam HPP</button>
+                        </div>
+
+                        <!-- SUB KRITERIA LIST -->
+                        <div class="pl-4 space-y-2 border-l-2 border-teal-300 my-2">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase">Sub-Kriteria Pecahan Markah (Contoh: Pendahuluan 5%, Penutup 5%)</div>
+                            ${(hpp.subKriteria || []).map((sub, sIdx) => `
+                                <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200">
+                                    <input type="text" value="${sub.id}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].subKriteria[${sIdx}].id = this.value" placeholder="ID Sub" class="w-20 text-[10px] font-mono-score">
+                                    <input type="text" value="${sub.name}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].subKriteria[${sIdx}].name = this.value" placeholder="Nama Sub-Kriteria" class="w-1/3 text-xs font-bold">
+                                    <input type="number" value="${sub.max}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].subKriteria[${sIdx}].max = Number(this.value)" placeholder="Max" class="w-14 text-xs text-center font-bold">
+                                    <input type="text" value="${sub.desc}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].subKriteria[${sIdx}].desc = this.value" placeholder="Keterangan Sub-Kriteria" class="flex-1 text-xs">
+                                    <button onclick="removeSubKriteriaItem(${tIdx}, ${hIdx}, ${sIdx})" class="text-rose-500 text-xs px-1"><i class="fas fa-times"></i></button>
+                                </div>
+                            `).join('')}
+                            <button onclick="addSubKriteriaItem(${tIdx}, ${hIdx})" class="text-[10px] font-bold text-teal-700 bg-teal-50 px-2 py-1 rounded border border-teal-200 hover:bg-teal-100"><i class="fas fa-plus me-1"></i> Tambah Sub-Kriteria Pecahan</button>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-1">
-                        <input type="number" id="rub_${it.key}" max="${it.max}" min="0" step="0.1" 
-                            value="${m[it.key] !== undefined ? m[it.key] : ''}" 
-                            class="w-16 p-2 border text-center font-bold text-xs bg-white" 
-                            oninput="syncRubrikToMain('${it.key}', this.value)">
-                        <span class="text-xs text-slate-400 font-bold">/${it.max}</span>
-                    </div>
-                </div>
-            `).join('')}
+                `).join('')}
+            </div>
+
+            <button onclick="addHPPItem(${tIdx})" class="btn-outline px-2.5 py-1.5 text-xs bg-white"><i class="fas fa-plus me-1"></i> Tambah Komponen HPP</button>
         </div>
     `).join('');
 }
 
-function syncRubrikToMain(key, val) {
-    const mainInputMap = {
-        'p_hpp2': 'h_p_hpp2',
-        'p_hpp5': 'h_p_hpp5',
-        't_hpp2': 'h_t_hpp2',
-        't_hpp11': 'h_t_hpp11',
-        't_vbe': 'h_t_vbe'
-    };
-    const mainId = mainInputMap[key];
-    if (mainId && document.getElementById(mainId)) {
-        document.getElementById(mainId).value = val;
-        calc();
-    }
+function addTugasanBlock() {
+    currentConfig.push({
+        id: "t" + (currentConfig.length + 1),
+        tugasan: "Tugasan " + (currentConfig.length + 1) + ": Baharu",
+        hppList: [{ 
+            id: "hpp_new", 
+            name: "HPP Baharu", 
+            max: 10, 
+            subKriteria: [{ id: "sub_1", name: "Pendahuluan", max: 5, desc: "Keterangan Kriteria" }] 
+        }]
+    });
+    loadConfigUI();
 }
 
-async function saveRubrik() {
-    if (!curS) return;
-    const btn = document.getElementById('saveRubrikBtn'); 
-    btn.disabled = true;
-    
-    RUBRIK_CFG.forEach(c => {
-        c.items.forEach(it => {
-            const val = document.getElementById('rub_' + it.key)?.value;
-            if (val !== undefined) syncRubrikToMain(it.key, val);
-        });
-    });
+function removeTugasanBlock(tIdx) {
+    currentConfig.splice(tIdx, 1);
+    loadConfigUI();
+}
 
-    await saveManualScores();
+function addHPPItem(tIdx) {
+    currentConfig[tIdx].hppList.push({ 
+        id: "hpp_" + Date.now().toString().slice(-4), 
+        name: "HPP Baharu", 
+        max: 10, 
+        subKriteria: [{ id: "sub_1", name: "Pecahan Kriteria 1", max: 5, desc: "Keterangan Kriteria" }] 
+    });
+    loadConfigUI();
+}
+
+function removeHPPItem(tIdx, hIdx) {
+    currentConfig[tIdx].hppList.splice(hIdx, 1);
+    loadConfigUI();
+}
+
+function addSubKriteriaItem(tIdx, hIdx) {
+    if (!currentConfig[tIdx].hppList[hIdx].subKriteria) {
+        currentConfig[tIdx].hppList[hIdx].subKriteria = [];
+    }
+    currentConfig[tIdx].hppList[hIdx].subKriteria.push({
+        id: "sub_" + Date.now().toString().slice(-4),
+        name: "Sub-Kriteria Baharu",
+        max: 5,
+        desc: "Keterangan Sub-Kriteria"
+    });
+    loadConfigUI();
+}
+
+function removeSubKriteriaItem(tIdx, hIdx, sIdx) {
+    currentConfig[tIdx].hppList[hIdx].subKriteria.splice(sIdx, 1);
+    loadConfigUI();
+}
+
+async function saveConfigToServer() {
+    const btn = document.getElementById('btnSaveConfig');
+    btn.disabled = true;
+    try {
+        await fetch(API, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({ action: 'saveRubrikConfig', config: currentConfig })
+        });
+        showToast('Tetapan HPP, Sub-Kriteria & Header Google Sheet Berjaya Dijana!');
+        setTimeout(initLec, 1500);
+    } catch(e) {
+        showToast('Ralat menyimpan tetapan.', 'warn');
+    }
     btn.disabled = false;
 }
 
-function renderSummaryTable() {
-    const c = document.getElementById('summaryClassFilter')?.value || '';
-    const q = (document.getElementById('summarySearchName')?.value || '').toLowerCase();
-    const sort = document.getElementById('summarySortBy')?.value || 'nama_asc';
-
-    let list = sData.filter(s => 
-        (!c || s.Kelas === c) && 
-        (s.Nama_Pelajar.toLowerCase().includes(q) || s.No_KP.includes(q))
-    );
-
-    list.sort((a, b) => {
-        const tA = a.markahSediaAda?.total || 0;
-        const tB = b.markahSediaAda?.total || 0;
-        if (sort === 'score_desc') return tB - tA;
-        if (sort === 'score_asc') return tA - tB;
-        if (sort === 'kelas_asc') return a.Kelas.localeCompare(b.Kelas);
-        return a.Nama_Pelajar.localeCompare(b.Nama_Pelajar);
+function showLecTab(tab) {
+    ['marking','rubrik','setup','summary','laporan','moderasi'].forEach(t => {
+        const el = document.getElementById('ltab-'+t);
+        if (el) el.style.display = 'none';
     });
-
-    document.getElementById('summaryBody').innerHTML = list.map(s => {
-        const m = s.markahSediaAda || {};
-        const tot = (m.p_hpp2||0) + (m.p_hpp5||0) + (m.t_hpp2||0) + (m.t_hpp11||0) + (m.t_vbe||0);
-        return `
-        <tr class="hover:bg-slate-50 border-b">
-            <td class="text-left font-bold text-xs p-3">
-                <div>${s.Nama_Pelajar}</div>
-                <div class="text-[10px] text-slate-400">${s.Kelas} • ${s.No_KP}</div>
-            </td>
-            <td>${m.p_hpp2 || '-'}</td>
-            <td>${m.p_hpp5 || '-'}</td>
-            <td>${m.t_hpp2 || '-'}</td>
-            <td>${m.t_hpp11 || '-'}</td>
-            <td>${m.t_vbe || '-'}</td>
-            <td class="font-bold bg-slate-100">${tot ? tot.toFixed(1) : '-'}</td>
-            <td class="font-bold font-serif-title text-teal-800 bg-slate-100">${tot ? calcGred(tot) : '-'}</td>
-            <td><button onclick="selStud('${s.No_KP}'); showLecTab('marking');" class="btn-outline px-2 py-1"><i class="fas fa-edit"></i></button></td>
-        </tr>`;
-    }).join('') || '<tr><td colspan="9" class="p-4 text-xs text-slate-400">Tiada rekod</td></tr>';
+    document.getElementById('ltab-'+tab).style.display = 'block';
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    
+    if (tab === 'moderasi') loadModeration();
 }
 
-async function loadGradeSummary() {
-    const cf = document.getElementById('laporanClassFilter')?.value || '';
-    try {
-        const r = await fetch(`${API}?action=getGradeSummary&email=${encodeURIComponent(curLec)}&kelas=${cf}`);
-        const o = await r.json();
-        if (o.bands) {
-            document.getElementById('gradeSummaryBody').innerHTML = o.bands.map(b => `
-                <tr>
-                    <td class="p-2 font-mono-score text-xs">${b.skala}</td>
-                    <td class="p-2 font-bold">${b.gred}</td>
-                    <td class="p-2 font-mono-score">${b.jumlah}</td>
-                    <td class="p-2 font-mono-score">${b.peratus}%</td>
-                </tr>
-            `).join('');
-            document.getElementById('gradeSummaryTotal').innerText = o.jumlah;
-            document.getElementById('gradeMinVal').innerText = o.purata ? o.purata.toFixed(2) : '--';
-            document.getElementById('gradeSDVal').innerText = o.sisihanPiawai ? o.sisihanPiawai.toFixed(2) : '--';
-        }
-    } catch(e) {}
-}
-
-async function loadModerationSampling() {
+async function loadModeration() {
     try {
         const r = await fetch(`${API}?action=getModerationSampling&email=${encodeURIComponent(curLec)}`);
         const o = await r.json();
-        if (o.samples) {
-            document.getElementById('modSamplesBody').innerHTML = o.samples.map((s,i) => `
-                <tr class="border-b">
-                    <td class="p-2 text-center">${i+1}</td>
-                    <td class="p-2 font-bold text-xs">${s.penilai}</td>
-                    <td class="p-2 text-xs">${s.nama}</td>
-                    <td class="p-2 text-center font-mono-score font-bold">${s.markah}/60</td>
-                    <td class="p-2 text-center font-mono-score font-bold">${s.markahPct.toFixed(1)}%</td>
-                    <td class="p-2 text-center font-bold text-teal-700">${s.gred}</td>
-                    <td class="p-2 text-xs font-bold">${s.kelompok}</td>
-                </tr>
-            `).join('');
-        }
-    } catch(e) {}
+        const samples = o.samples || [];
+        document.getElementById('moderationBody').innerHTML = samples.map((s, i) => `
+            <tr>
+                <td class="font-mono-score">${i+1}</td>
+                <td class="font-bold text-left">${s.nama}</td>
+                <td>${s.kelas}</td>
+                <td class="font-mono-score font-bold">${s.markah}</td>
+                <td class="font-mono-score text-teal-700 font-bold">${s.markahPct.toFixed(1)}%</td>
+                <td class="font-serif-title font-bold">${s.gred}</td>
+            </tr>
+        `).join('') || `<tr><td colspan="6" class="p-4 text-slate-400">Tiada sampel moderasi.</td></tr>`;
+    } catch(e){}
 }
 
-function janaCadanganPintar() {
-    toast('Simulasi SP Dijana', 'success');
+function loadSummary() {
+    const headerRow = `<tr>
+        <th class="text-left">Nama Pelajar</th>
+        ${currentConfig.map(t => t.hppList.map(h => `<th>${h.name} (${h.max})</th>`).join('')).join('')}
+        <th class="bg-slate-200 text-slate-800">JUMLAH (60)</th>
+        <th class="bg-slate-200 text-slate-800">GRED (100%)</th>
+    </tr>`;
+    document.getElementById('summaryHeader').innerHTML = headerRow;
+
+    document.getElementById('summaryBody').innerHTML = sData.map(s => {
+        const m = s.markahSediaAda || {};
+        const scores = m.scores || {};
+        let tot = 0;
+
+        let cells = currentConfig.map(t => t.hppList.map(h => {
+            let val = scores[h.id] !== undefined ? scores[h.id] : (m[h.id] || 0);
+            tot += Number(val) || 0;
+            return `<td>${val || '-'}</td>`;
+        }).join('')).join('');
+
+        return `
+            <tr class="hover:bg-slate-50">
+                <td class="text-left font-bold text-xs">${s.Nama_Pelajar}</td>
+                ${cells}
+                <td class="font-mono-score font-bold bg-slate-100">${tot || '-'}</td>
+                <td class="font-serif-title font-bold text-teal-700 bg-slate-100">${tot ? calcGred(tot) : '-'}</td>
+            </tr>
+        `;
+    }).join('') || `<tr><td colspan="10" class="p-4 text-slate-400">Tiada rekod.</td></tr>`;
+}
+
+async function loadGradeSummary() {
+    try {
+        const r = await fetch(`${API}?action=getGradeSummary&email=${encodeURIComponent(curLec)}`);
+        const o = await r.json();
+        const bands = o.bands || [];
+
+        document.getElementById('gradeSummaryBody').innerHTML = bands.map(b => `
+            <tr>
+                <td class="font-mono-score text-xs">${b.skala}</td>
+                <td class="font-bold">${b.gred}</td>
+                <td class="font-mono-score font-bold">${b.jumlah}</td>
+                <td class="font-mono-score">${b.peratus}%</td>
+            </tr>
+        `).join('');
+
+        if (chartInstance) chartInstance.destroy();
+        const ctx = document.getElementById('gradeChart').getContext('2d');
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: bands.map(b => b.gred),
+                datasets: [{ label: 'Jumlah Pelajar', data: bands.map(b => b.jumlah), backgroundColor: '#0f766e' }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    } catch(e){}
 }
 
 function printIndividualReport() {
+    if (!curS) return;
+    const m = curS.markahSediaAda || {};
+    const tot = m.total || 0;
+    
+    document.getElementById('printArea').innerHTML = `
+        <div class="p-8 font-sans">
+            <h2 class="text-center font-bold text-xl mb-1">IPG KAMPUS DARULAMAN</h2>
+            <h3 class="text-center font-bold text-sm mb-4">DOSSIER PEMARKAHAN PIMK6013 (PENGAJIAN ILMU AKIDAH)</h3>
+            <div class="border p-4 mb-4 text-xs space-y-1">
+                <div><strong>NAMA:</strong> ${curS.Nama_Pelajar}</div>
+                <div><strong>NO. KP:</strong> ${curS.No_KP}</div>
+                <div><strong>KELAS:</strong> ${curS.Kelas}</div>
+            </div>
+            <table class="w-full border-collapse border text-xs text-center mb-6">
+                <thead>
+                    <tr class="bg-slate-100">
+                        <th class="border p-2">PEMARKAHAN PIMK6013</th>
+                        <th class="border p-2">JUMLAH (60)</th>
+                        <th class="border p-2">GRED (100%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="border p-2 text-left">Pentaksiran Berterusan PIMK6013</td>
+                        <td class="border p-2 font-bold">${tot}</td>
+                        <td class="border p-2 font-bold">${calcGred(tot)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
     window.print();
 }
 
-function logout() { 
-    location.reload(); 
-}
-
-window.onload = () => {
-    initLec();
-};
+function logout() { location.reload(); }
 </script>
 </body>
 </html>
