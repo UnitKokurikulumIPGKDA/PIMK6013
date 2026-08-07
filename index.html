@@ -287,55 +287,18 @@
                 </div>
             </div>
 
-            <!-- TAB 5: ANALISIS GRED DENGAN KAD SISIHAN PIAWAI (SP) REAL-TIME -->
+            <!-- TAB 5: ANALISIS GRED -->
             <div id="ltab-laporan" style="display:none;">
-                <div class="academic-card p-6 mb-6 flex justify-between items-center bg-white border-l-4" style="border-left-color: var(--secondary);">
-                    <div>
-                        <h3 class="font-serif-title text-xl font-bold text-slate-800">Analisis Taburan Gred PIMK6013</h3>
-                        <p class="text-xs text-slate-500 mt-1">Statistik masa nyata (real-time) dikira secara automatik daripada pangkalan data pelajar.</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <select id="laporanClassFilter" onchange="loadGradeSummary()" class="text-xs py-2 px-3 bg-slate-50 font-bold border rounded-lg">
-                            <option value="">Semua Kelas</option>
-                        </select>
-                        <button onclick="loadGradeSummary()" class="btn-outline px-3 py-2 bg-white"><i class="fas fa-sync-alt me-1"></i> Segar Semula</button>
-                        <button onclick="window.print()" class="btn-primary px-4 py-2 rounded-lg text-[11px]"><i class="fas fa-print me-2"></i> Cetak Laporan</button>
-                    </div>
-                </div>
-
-                <!-- KAD STATISTIK REAL-TIME (JUMLAH, PURATA MEAN, SISIHAN PIAWAI SP, JULAT) -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div class="academic-card p-5 text-center border-t-4" style="border-top-color: var(--primary);">
-                        <div class="dim-label mb-1">JUMLAH CALON DINILAI</div>
-                        <div id="gradeTotalGradedVal" class="font-mono-score text-3xl font-black text-slate-800">0</div>
-                        <div class="text-[10px] text-slate-400 font-bold mt-1 uppercase">Penyertaan Terkumpul</div>
-                    </div>
-                    <div class="academic-card p-5 text-center border-t-4" style="border-top-color: #0d9488;">
-                        <div class="dim-label mb-1">PURATA MARKAH (MEAN)</div>
-                        <div id="gradeMinVal" class="font-mono-score text-3xl font-black text-teal-700">--</div>
-                        <div class="text-[10px] text-slate-400 font-bold mt-1 uppercase">Skala Maksimum 100%</div>
-                    </div>
-                    <div class="academic-card p-5 text-center border-t-4" style="border-top-color: var(--secondary);">
-                        <div class="dim-label mb-1">SISIHAN PIAWAI (SP)</div>
-                        <div id="gradeSDVal" class="font-mono-score text-3xl font-black text-rose-700">--</div>
-                        <div class="text-[10px] text-slate-400 font-bold mt-1 uppercase">Sebaran Markah Data</div>
-                    </div>
-                    <div class="academic-card p-5 text-center border-t-4" style="border-top-color: #7c3aed;">
-                        <div class="dim-label mb-1">JULAT MARKAH (MIN - MAX)</div>
-                        <div id="gradeRangeVal" class="font-mono-score text-2xl font-black text-purple-800">--</div>
-                        <div class="text-[10px] text-slate-400 font-bold mt-1 uppercase">Had Pencapaian Data</div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 items-start">
-                    <div class="academic-card p-4 overflow-hidden">
-                        <table class="academic-table text-center">
-                            <thead><tr><th>Skala (100%)</th><th>Gred</th><th>Jumlah</th><th>%</th></tr></thead>
-                            <tbody id="gradeSummaryBody"></tbody>
-                        </table>
-                    </div>
-                    <div class="academic-card p-6">
-                        <div class="h-80">
+                <div class="academic-card p-6">
+                    <h3 class="font-serif-title text-xl font-bold text-slate-800 mb-4">Analisis Taburan Gred PIMK6013</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                        <div>
+                            <table class="academic-table text-center">
+                                <thead><tr><th>Skala (100%)</th><th>Gred</th><th>Jumlah</th><th>%</th></tr></thead>
+                                <tbody id="gradeSummaryBody"></tbody>
+                            </table>
+                        </div>
+                        <div class="h-64">
                             <canvas id="gradeChart"></canvas>
                         </div>
                     </div>
@@ -434,7 +397,7 @@
 <div id="printArea"></div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbxufZgAB9OWBbVzGzBascudDu498uJB80q9PtWDAFWLzDCZD5MxYqGKvIRyC38JgkId1Q/exec";
+const API = "https://script.google.com/macros/s/AKfycbyDpo-j5WCmOSA-TCLgMzTpjxFBFfU8m5DSG4-qNeFo5BAyadH1v6ejN-9C4hhygpqA/exec";
 
 let curLec = "meharmadhafadz@ipgm.edu.my";
 let sData = [], curS = null, chartInstance = null;
@@ -464,15 +427,27 @@ function calcGred(total60) {
     if (pct >= 40) return "C-"; if (pct >= 30) return "D+"; if (pct >= 20) return "D";  return "F";
 }
 
+/* ============================================================
+ * PEMBETULAN: SEKATAN MARKAH MELEBIHI HAD MAKSIMUM (CLAMP)
+ * Sebelum ini atribut HTML `max` pada input type=number TIDAK
+ * menyekat penaipan terus (hanya sekat butang panah spinner).
+ * Fungsi ini memaksa nilai kekal dalam julat [0, maxVal] SETIAP
+ * KALI pengguna menaip / tampal (paste) nilai, secara langsung
+ * (real-time), supaya paparan "Jumlah HPP" tidak sesekali
+ * melebihi had walaupun sebelum tekan Simpan.
+ * ============================================================ */
 function clampScore(el, maxVal) {
     maxVal = Number(maxVal);
     let raw = el.value;
     let v = parseFloat(raw);
 
-    if (raw === '') { el.classList.remove('at-max'); return; }
+    if (raw === '' ) { el.classList.remove('at-max'); return; } // benarkan medan kosong semasa menaip
     if (isNaN(v)) v = 0;
 
-    if (v < 0) { v = 0; flashInvalid(el); }
+    if (v < 0) {
+        v = 0;
+        flashInvalid(el);
+    }
     if (v > maxVal) {
         v = maxVal;
         flashInvalid(el);
@@ -485,7 +460,7 @@ function clampScore(el, maxVal) {
 
 function flashInvalid(el) {
     el.classList.remove('invalid-flash');
-    void el.offsetWidth;
+    void el.offsetWidth; // reflow untuk re-trigger animasi
     el.classList.add('invalid-flash');
 }
 
@@ -513,10 +488,8 @@ async function initLec() {
         currentConfig = o.config || [];
         
         const classes = [...new Set(sData.map(s => s.Kelas))].filter(Boolean);
-        ['classFilter','laporanClassFilter'].forEach(id => {
-            const cf = document.getElementById(id);
-            if (cf) cf.innerHTML = '<option value="">Semua Kelas</option>' + classes.map(c => `<option value="${c}">${c}</option>`).join('');
-        });
+        const cf = document.getElementById('classFilter');
+        if (cf) cf.innerHTML = '<option value="">Semua Kelas</option>' + classes.map(c => `<option value="${c}">${c}</option>`).join('');
 
         renderList();
         renderDynamicGradingCards();
@@ -545,6 +518,7 @@ function renderList() {
 
 function filterStudents() { renderList(); }
 
+/* RENDER CARDS PEMARKAHAN BERDASARKAN CONFIG (KINI DENGAN CLAMP) */
 function renderDynamicGradingCards() {
     const container = document.getElementById('dynamicMarkingCards');
     if (!container) return;
@@ -610,6 +584,7 @@ function calc() {
         t.hppList.forEach(hpp => {
             const el = document.getElementById(`inp_${hpp.id}`);
             let v = el ? Number(el.value) || 0 : 0;
+            // Sekatan pertahanan tambahan (defence-in-depth) semasa mengira jumlah
             v = Math.min(hpp.max, Math.max(0, v));
             tot += v;
         });
@@ -635,7 +610,7 @@ async function saveManual() {
     });
 
     try {
-        await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
+        await fetch(API, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
         showToast('Markah PIMK6013 Berjaya Disimpan');
         setTimeout(initLec, 1200);
     } catch(e) {
@@ -701,6 +676,7 @@ async function renderRubrikUI() {
         </div>
     `).join('');
 
+    // Pastikan nilai sedia ada dari server turut dikenakan clamp semasa dipaparkan buat kali pertama
     currentConfig.forEach(t => {
         t.hppList.forEach(hpp => {
             (hpp.subKriteria || []).forEach(sub => {
@@ -713,6 +689,7 @@ async function renderRubrikUI() {
 }
 
 function calcRubrikHPP(hppId) {
+    // Cari maksimum HPP ini daripada currentConfig untuk sekatan jumlah tambahan
     let hppMax = 0;
     currentConfig.forEach(t => t.hppList.forEach(h => { if (h.id === hppId) hppMax = Number(h.max); }));
 
@@ -721,10 +698,12 @@ function calcRubrikHPP(hppId) {
     inputs.forEach(inp => {
         const maxAttr = Number(inp.dataset.max) || 0;
         let v = Number(inp.value) || 0;
-        v = Math.min(maxAttr, Math.max(0, v));
+        v = Math.min(maxAttr, Math.max(0, v)); // sekatan pertahanan tambahan setiap sub-kriteria
         sum += v;
     });
 
+    // Sekatan pertahanan tambahan: jumlah HPP tidak boleh melebihi had HPP walaupun secara teori
+    // jumlah sub-kriteria sepatutnya menyamai had HPP mengikut reka bentuk rubrik.
     if (hppMax > 0 && sum > hppMax) sum = hppMax;
 
     const totalEl = document.getElementById(`r_hpp_total_${hppId}`);
@@ -733,10 +712,11 @@ function calcRubrikHPP(hppId) {
         totalEl.style.color = (sum >= hppMax && hppMax > 0) ? '#0f766e' : '';
     }
 
+    // KEMAS KINI DENGAN SERERTA KE INPUT PEMARKAHAN INDUK SECARA LIVE
     const mainInp = document.getElementById(`inp_${hppId}`);
     if (mainInp) {
         mainInp.value = sum.toFixed(1);
-        calc();
+        calc(); // KIRA SEMULA JUMLAH & GRED DENGAN SERERTA
     }
 }
 
@@ -762,12 +742,12 @@ async function saveRubrik() {
             let hppSum = 0;
             (hpp.subKriteria || []).forEach(sub => {
                 const el = document.getElementById(`r_sub_${sub.id}`);
-                if (el) clampScore(el, sub.max);
+                if (el) clampScore(el, sub.max); // sekatan muktamad sebelum hantar ke server
                 const val = el ? Number(el.value) || 0 : 0;
                 payload.data[sub.id] = val;
                 hppSum += val;
             });
-            hppSum = Math.min(hpp.max, hppSum);
+            hppSum = Math.min(hpp.max, hppSum); // sekatan muktamad peringkat HPP
             curS.markahSediaAda.scores[hpp.id] = hppSum;
             const mainInp = document.getElementById(`inp_${hpp.id}`);
             if (mainInp) mainInp.value = hppSum.toFixed(1);
@@ -777,7 +757,7 @@ async function saveRubrik() {
     calc();
 
     try {
-        await fetch(API, { method: 'POST', body: JSON.stringify(payload) });
+        await fetch(API, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
         showToast('Rubrik PIMK6013 Disahkan & Markah Induk Dikemas kini!');
         setTimeout(initLec, 1200);
     } catch(e) {
@@ -810,7 +790,7 @@ function loadConfigUI() {
 
                         <!-- SUB KRITERIA LIST -->
                         <div class="pl-4 space-y-2 border-l-2 border-teal-300 my-2">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase">Sub-Kriteria Pecahan Markah</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase">Sub-Kriteria Pecahan Markah (Contoh: Pendahuluan 5%, Penutup 5%)</div>
                             ${(hpp.subKriteria || []).map((sub, sIdx) => `
                                 <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200">
                                     <input type="text" value="${sub.id}" onchange="currentConfig[${tIdx}].hppList[${hIdx}].subKriteria[${sIdx}].id = this.value" placeholder="ID Sub" class="w-20 text-[10px] font-mono-score">
@@ -835,7 +815,12 @@ function addTugasanBlock() {
     currentConfig.push({
         id: "t" + (currentConfig.length + 1),
         tugasan: "Tugasan " + (currentConfig.length + 1) + ": Baharu",
-        hppList: [{ id: "hpp_new", name: "HPP Baharu", max: 10, subKriteria: [{ id: "sub_1", name: "Pendahuluan", max: 5, desc: "Keterangan Kriteria" }] }]
+        hppList: [{ 
+            id: "hpp_new", 
+            name: "HPP Baharu", 
+            max: 10, 
+            subKriteria: [{ id: "sub_1", name: "Pendahuluan", max: 5, desc: "Keterangan Kriteria" }] 
+        }]
     });
     loadConfigUI();
 }
@@ -879,6 +864,8 @@ function removeSubKriteriaItem(tIdx, hIdx, sIdx) {
 }
 
 async function saveConfigToServer() {
+    // SEMAKAN INTEGRITI: pastikan jumlah max sub-kriteria menyamai max HPP induknya
+    // supaya "Jumlah HPP" tidak sesekali dapat melebihi had HPP secara reka bentuk.
     for (const t of currentConfig) {
         for (const hpp of t.hppList) {
             const subTotal = (hpp.subKriteria || []).reduce((s, sub) => s + Number(sub.max || 0), 0);
@@ -894,6 +881,7 @@ async function saveConfigToServer() {
     try {
         await fetch(API, {
             method: 'POST',
+            mode: 'no-cors',
             body: JSON.stringify({ action: 'saveRubrikConfig', config: currentConfig })
         });
         showToast('Tetapan HPP, Sub-Kriteria & Header Google Sheet Berjaya Dijana!');
@@ -914,7 +902,6 @@ function showLecTab(tab) {
     event.currentTarget.classList.add('active');
     
     if (tab === 'moderasi') loadModeration();
-    if (tab === 'laporan') loadGradeSummary();
 }
 
 async function loadModeration() {
@@ -974,50 +961,9 @@ function loadSummary() {
     }).join('') || `<tr><td colspan="10" class="p-4 text-slate-400">Tiada rekod.</td></tr>`;
 }
 
-/* ============================================================
- * PENAMBAHBAIKAN UTAMA: PENGIRAAN REAL-TIME DARI PEMBOLEHUBAH `sData`
- * Sisihan Piawai (SP), Mean %, Jumlah Pelajar & Julat %
- * ============================================================ */
 async function loadGradeSummary() {
-    const classFilter = document.getElementById('laporanClassFilter') ? document.getElementById('laporanClassFilter').value : "";
-    
-    // Tapis pelajar mengikut kelas jika dipilih
-    const filtered = sData.filter(s => !classFilter || s.Kelas === classFilter);
-
-    // Kumpul semua markah sah (100% skala)
-    const validScores = filtered
-        .map(s => (s.markahSediaAda && Number(s.markahSediaAda.total) > 0) ? (Number(s.markahSediaAda.total) / 60) * 100 : 0)
-        .filter(v => v > 0);
-
-    const n = validScores.length;
-
-    // 1. Kemas kini Kad Jumlah Calon
-    document.getElementById('gradeTotalGradedVal').innerText = n;
-
-    if (n > 0) {
-        // 2. Pengiraan Mean (Purata Markah)
-        const mean = validScores.reduce((a, b) => a + b, 0) / n;
-        
-        // 3. Pengiraan Variance & Sisihan Piawai (SP)
-        const variance = validScores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
-        const sd = Math.sqrt(variance);
-        
-        // 4. Pengiraan Julat Markah (Min - Max)
-        const minPct = Math.min(...validScores);
-        const maxPct = Math.max(...validScores);
-
-        document.getElementById('gradeMinVal').innerText = mean.toFixed(2) + '%';
-        document.getElementById('gradeSDVal').innerText = sd.toFixed(2);
-        document.getElementById('gradeRangeVal').innerText = `${minPct.toFixed(1)}% - ${maxPct.toFixed(1)}%`;
-    } else {
-        document.getElementById('gradeMinVal').innerText = '--';
-        document.getElementById('gradeSDVal').innerText = '--';
-        document.getElementById('gradeRangeVal').innerText = '--';
-    }
-
-    // 5. Kemas kini Jadual Band & Carta Bar
     try {
-        const r = await fetch(`${API}?action=getGradeSummary&email=${encodeURIComponent(curLec)}&kelas=${encodeURIComponent(classFilter)}`);
+        const r = await fetch(`${API}?action=getGradeSummary&email=${encodeURIComponent(curLec)}`);
         const o = await r.json();
         const bands = o.bands || [];
 
@@ -1047,7 +993,7 @@ async function loadGradeSummary() {
 function runSPSimulation() {
     const targetSP = parseFloat(document.getElementById('simTargetSP').value) || 5.5;
     const maxDelta = parseFloat(document.getElementById('simMaxDelta').value) || 3.0;
-    const mode = document.getElementById('simGradeMode').value;
+    const mode = document.getElementById('simGradeMode').value; // 'strict' (Gred Kekal) vs 'flexible'
 
     const validStudents = sData.filter(s => s.markahSediaAda && Number(s.markahSediaAda.total) > 0);
     if (!validStudents.length) return showToast('Tiada markah pelajar tersedia untuk simulasi', 'warn');
@@ -1059,6 +1005,7 @@ function runSPSimulation() {
 
     document.getElementById('simSPBefore').innerText = currentSP.toFixed(2);
 
+    // BANDS DENGAN MIN/MAX MARAH ATAS 60
     const BAND_LIMITS_60 = {
         "A+": { min: 54.0, max: 60.0 }, "A": { min: 48.0, max: 53.9 }, "A-": { min: 45.0, max: 47.9 },
         "B+": { min: 42.0, max: 44.9 }, "B": { min: 39.0, max: 41.9 }, "B-": { min: 36.0, max: 38.9 },
@@ -1076,6 +1023,7 @@ function runSPSimulation() {
 
         let band = BAND_LIMITS_60[origGred] || { min: 0, max: 60 };
 
+        // TOLAK SCORE JAUH DARI MEAN UNTUK TINGKATKAN SISIHAN PIAWAI (SP)
         if (origScore >= mean) {
             let possibleNew = origScore + maxDelta;
             if (mode === 'strict') {
