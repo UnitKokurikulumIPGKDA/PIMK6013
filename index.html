@@ -26,6 +26,9 @@
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
+        /* Anti-select & Security Styling */
+        body { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-body); min-height: 100vh; color: var(--text-main); }
         .font-serif-title { font-family: 'Lora', serif; }
@@ -69,7 +72,7 @@
         }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
 <div id="toast">
     <div class="academic-card px-5 py-4 flex items-center gap-3 text-sm font-bold shadow-lg" id="toastMsg" style="border-left: 4px solid var(--primary);"></div>
@@ -124,7 +127,7 @@
         </button>
     </div>
 
-    <!-- Navigation Bar dengan Tab "⚙️ Tetapan Kriteria HPP" -->
+    <!-- Navigation Bar dengan Semua Tab Admin -->
     <div class="bg-white border-b border-slate-200 px-8 pt-3">
         <div class="flex gap-2 overflow-x-auto">
             <button class="nav-btn active" onclick="showLecTab('marking')"><i class="fas fa-calculator me-1"></i> Pemarkahan Induk</button>
@@ -133,6 +136,7 @@
             <button class="nav-btn" onclick="showLecTab('summary')"><i class="fas fa-table me-1"></i> Rekod Prestasi</button>
             <button class="nav-btn" onclick="showLecTab('laporan')"><i class="fas fa-chart-pie me-1"></i> Analisis Gred</button>
             <button class="nav-btn text-amber-800" onclick="showLecTab('moderasi')"><i class="fas fa-balance-scale me-1"></i> Moderasi LAM-PT-04-02</button>
+            <button class="nav-btn text-purple-800" onclick="showLecTab('simulasi')"><i class="fas fa-flask me-1"></i> Simulasi SP</button>
         </div>
         <style>
             .nav-btn { background:transparent; border:none; padding:10px 16px; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; border-bottom:3px solid transparent; cursor:pointer; white-space:nowrap; }
@@ -302,6 +306,20 @@
                     </div>
                 </div>
             </div>
+
+            <!-- TAB 7: SIMULASI SISIHAN PIAWAI (SP) -->
+            <div id="ltab-simulasi" style="display:none;">
+                <div class="academic-card p-6">
+                    <h3 class="font-serif-title text-xl font-bold text-slate-800 mb-2">Simulasi Sisihan Piawai (SP)</h3>
+                    <p class="text-xs text-slate-500 mb-4">Alat simulasi penyesuaian markah automatik bagi pengesahan taburan gred norma.</p>
+                    <div class="p-4 bg-slate-50 border rounded-lg mb-4 text-xs text-slate-600">
+                        Sistem sedia melakukan simulasi penyesuaian markah mengikut kelas.
+                    </div>
+                    <button onclick="loadModeration()" class="btn-primary px-4 py-2 rounded-lg text-xs">
+                        <i class="fas fa-flask me-1"></i> Jalankan Simulasi SP
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -314,6 +332,14 @@ const API = "https://script.google.com/macros/s/AKfycbyDpo-j5WCmOSA-TCLgMzTpjxFB
 let curLec = "meharmadhafadz@ipgm.edu.my";
 let sData = [], curS = null, chartInstance = null;
 let currentConfig = [];
+
+/* --- KAWALAN KESELAMATAN ANTI-INSPECT --- */
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+    if (e.key === 'F12' || e.keyCode === 123) e.preventDefault();
+    if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) e.preventDefault();
+    if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.key === 'S' || e.key === 's')) e.preventDefault();
+});
 
 function showToast(msg, type='success') {
     const t = document.getElementById('toast'), m = document.getElementById('toastMsg');
@@ -691,7 +717,7 @@ async function saveConfigToServer() {
 }
 
 function showLecTab(tab) {
-    ['marking','rubrik','setup','summary','laporan','moderasi'].forEach(t => {
+    ['marking','rubrik','setup','summary','laporan','moderasi','simulasi'].forEach(t => {
         const el = document.getElementById('ltab-'+t);
         if (el) el.style.display = 'none';
     });
